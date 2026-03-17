@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>CE&P Corporation – Lucky Draw</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link
@@ -340,8 +341,8 @@
         /* PRIZE PANEL */
         .prize-panel {
             text-align: center;
-            position: sticky;
-            top: 24px;
+            position: static;
+            /* remove sticky behavior to avoid sticking on scroll */
         }
 
         .plabel {
@@ -538,6 +539,136 @@
             }
         }
 
+        /* WINNERS LIST */
+        .winners-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .winner-card {
+            background: rgba(255, 255, 255, .7);
+            border: 1px solid rgba(255, 255, 255, .8);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(13, 43, 107, .1);
+        }
+
+        .winner-code {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--red);
+            margin-bottom: 5px;
+        }
+
+        .winner-prize {
+            font-family: 'Battambang', serif;
+            font-size: 0.9rem;
+            color: var(--blue-dark);
+        }
+
+        .winner-time {
+            font-size: 0.7rem;
+            color: var(--blue-mid);
+            margin-top: 5px;
+        }
+
+        .winner-codes-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .prize-winners-section {
+            margin-bottom: 18px;
+        }
+
+        .prize-winners-title {
+            font-weight: 700;
+            color: var(--blue-dark);
+            margin-bottom: 10px;
+        }
+
+        .prize-winners-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+
+
+
+        .winner-code-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(255, 223, 115, .9);
+            border: 1px solid rgba(255, 199, 55, .65);
+            box-shadow: 0 2px 10px rgba(13, 43, 107, .08);
+            color: var(--blue-dark);
+            font-weight: 600;
+        }
+
+        .winner-code-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--red);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .winner-code-text {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.95rem;
+        }
+
+        /* STATS PANEL */
+        .stats-panel {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            align-items: stretch;
+        }
+
+        @media (max-width: 768px) {
+            .stats-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, .7);
+            border: 1px solid rgba(255, 255, 255, .8);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(13, 43, 107, .1);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--red);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-family: 'Battambang', serif;
+            font-size: 0.9rem;
+            color: var(--blue-dark);
+        }
+
         footer {
             position: relative;
             z-index: 5;
@@ -593,176 +724,281 @@
 
         <!-- LEFT -->
         <div class="gc">
-            <div class="stitle">🎊 អ្នកឈ្នះរង្វាន់</div>
-            <div class="slots" id="grid"></div>
-            <div class="irow">
-                <button class="btn-draw" onclick="addW()">ចាប់រង្វាន់ ✦</button>
+            <div class="stitle">📊 ស្ថិតិសរុប / Overall Stats</div>
+            <div class="stats-panel">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalWinners">0</div>
+                    <div class="stat-label">Total Winners</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="totalPrizes">0</div>
+                    <div class="stat-label">Total Prizes</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="remainingCodes">2000</div>
+                    <div class="stat-label">Available Codes</div>
+                </div>
+            </div>
+            <div class="stat-item" style="padding: 10px 12px;margin-top: 10px;">
+                <div class="stat-label" style="margin-bottom: 8px;">Recent Winner Codes</div>
+                <div id="winnerCodesList" class="winner-codes-list"></div>
             </div>
         </div>
 
         <!-- RIGHT -->
         <div class="gc prize-panel">
             <p class="plabel">ការចាប់រង្វាន់</p>
-            <div class="ptitle">ចូលឆ្នាំខ្មែរ</div>
-            <p class="psub">🎁 រង្វាន់ OPPO A5</p>
+            <div class="ptitle" id="prizeTitle">Loading...</div>
+            <p class="psub" id="prizeDesc">🎁 Loading...</p>
 
             <div class="phone-wrap">
-                <img id="phoneImg" class="phone-img"
-                    src="https://oasissmartphone.com/cdn/shop/files/oppo-a5-white-1.jpg?v=1737612547" alt="OPPO A5"
-                    onerror="this.src='https://angkormeas.com/wp-content/uploads/2025/06/Oppo-A5-2025-White.jpg?v=1749105725'">
-                <div class="pbadge"><strong>10</strong>រង្វាន់</div>
+                <img id="prizeImg" class="phone-img" src="" alt="Prize" style="display:none;">
+                <div class="pbadge"><strong id="remainingCount">0</strong>រង្វាន់</div>
             </div>
 
-            <div class="wcount">🏅 អ្នកឈ្នះ: <strong id="wc">0</strong>&nbsp;/ 10</div>
-            <button class="btn-reset" onclick="resetAll()">🔄 ចាប់ឡើងវិញ / Reset</button>
+            <div class="wcount">🏅 អ្នកឈ្នះ: <strong id="wc">0</strong>&nbsp;/ <span id="totalCount">0</span>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn-draw" onclick="addW()">ចាប់រង្វាន់ ✦</button>
+            </div>
+            <!-- reset button intentionally removed -->
+
         </div>
 
-    </div>
-
-    <!-- DRAW MODAL -->
-    <div id="drawModal" class="draw-modal" style="display: none;">
-        <div class="draw-content">
-            <h2>ការចាប់រង្វាន់</h2>
-            <div class="draw-code" id="randomCode">0000</div>
+        <!-- WINNERS SECTION -->
+        <div class="winners-section" style="margin: 40px auto; max-width: 1180px; padding: 0 20px;">
+            <div class="gc">
+                <div class="stitle">🏆 បញ្ជីអ្នកឈ្នះទាំងអស់ / All Winners</div>
+                <div id="winnersList" class="winners-list">
+                    <!-- Winners will be loaded here -->
+                </div>
+            </div>
         </div>
-    </div>
 
-    <footer>© 2025 CE&amp;P Corporation — Optimize Your Investment</footer>
+        <!-- DRAW MODAL -->
+        <div id="drawModal" class="draw-modal" style="display: none;">
+            <div class="draw-content">
+                <h2>ការចាប់រង្វាន់</h2>
+                <div class="draw-code" id="randomCode">0000</div>
+            </div>
+        </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        const TOTAL = 10;
-        const MIN_CODE = 1;
-        const MAX_CODE = 2000;
-        let winners = JSON.parse(sessionStorage.getItem('cep_w') || '[]');
-        let remainingCodes = [];
-        let drawInterval;
-        let finalCode;
+        <footer>© 2025 CE&amp;P Corporation — Optimize Your Investment</footer>
 
-        function save() {
-            sessionStorage.setItem('cep_w', JSON.stringify(winners));
-        }
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            let currentPrize = null;
+            let remainingCodes = [];
+            let drawInterval;
 
-        function render() {
-            const g = document.getElementById('grid');
-            g.innerHTML = '';
-            for (let i = 1; i <= TOTAL; i++) {
-                const w = winners[i - 1] || null;
-                const d = document.createElement('div');
-                d.className = 'slot' + (w ? ' won' : '');
-                d.id = 's' + i;
-                d.innerHTML = `<div class="snum">${i}</div><div class="sname">${w?'🏅 '+w:''}</div>`;
-                g.appendChild(d);
+            function loadCurrentPrize() {
+                fetch('/api/current-prize')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            document.getElementById('prizeTitle').textContent = 'រង្វាន់អស់ហើយ';
+                            document.getElementById('prizeDesc').textContent = '🎁 No prizes available';
+                            document.getElementById('prizeImg').style.display = 'none';
+                            document.getElementById('remainingCount').textContent = '0';
+                            document.getElementById('totalCount').textContent = '0';
+                            document.getElementById('wc').textContent = '0';
+                            return;
+                        }
+                        currentPrize = data;
+                        document.getElementById('prizeTitle').textContent = data.name;
+                        document.getElementById('prizeDesc').textContent = '🎁 ' + (data.description || data.name);
+                        if (data.photo_path) {
+                            document.getElementById('prizeImg').src = '/storage/' + data.photo_path;
+                            document.getElementById('prizeImg').style.display = 'block';
+                        } else {
+                            document.getElementById('prizeImg').style.display = 'none';
+                        }
+                        document.getElementById('remainingCount').textContent = data.remaining;
+                        document.getElementById('totalCount').textContent = data.total;
+                        document.getElementById('wc').textContent = data.won;
+                    })
+                    .catch(error => console.error('Error loading prize:', error));
             }
-            document.getElementById('wc').textContent = winners.length;
-        }
 
-        function addW() {
-            if (winners.length >= TOTAL) {
-                alert('រង្វាន់ទាំង 10 ត្រូវបានចាប់ហើយ!');
-                return;
+            function loadWinners() {
+                fetch('/api/winners')
+                    .then(response => response.json())
+                    .then(data => {
+                        const list = document.getElementById('winnersList');
+                        list.innerHTML = '';
+                        data.forEach(winner => {
+                            const card = document.createElement('div');
+                            card.className = 'winner-card';
+                            // Show only the winner code (no names/prizes)
+                            card.innerHTML = `
+                            <div class="winner-code">${winner.code}</div>
+                        `;
+                            list.appendChild(card);
+                        });
+                        // Update total winners
+                        document.getElementById('totalWinners').textContent = data.length;
+
+                        // Populate winner codes list (latest first)
+                        const codesList = document.getElementById('winnerCodesList');
+                        codesList.innerHTML = '';
+                        data.slice(0, 10).forEach((winner, index) => {
+                            const item = document.createElement('div');
+                            item.className = 'winner-code-item';
+                            item.innerHTML = `
+                                <div class="winner-code-number">${index + 1}</div>
+                                <div class="winner-code-text">🏅 ${winner.code}</div>
+                            `;
+                            codesList.appendChild(item);
+                        });
+
+                        // Refresh global stats (remaining codes should be based on ALL winners)
+                        loadStats();
+                    })
+                    .catch(error => console.error('Error loading winners:', error));
             }
-            // Get remaining codes
-            remainingCodes = [];
-            for (let i = MIN_CODE; i <= MAX_CODE; i++) {
-                const code = i.toString().padStart(4, '0');
-                if (!winners.includes(code)) {
-                    remainingCodes.push(code);
-                }
-            }
-            // Show modal
-            document.getElementById('drawModal').style.display = 'flex';
-            // Start random display
-            drawInterval = setInterval(() => {
-                const randomIndex = Math.floor(Math.random() * remainingCodes.length);
-                document.getElementById('randomCode').textContent = remainingCodes[randomIndex];
-            }, 50); // Change every 50ms
-            // Stop after 3 seconds
-            setTimeout(() => {
-                clearInterval(drawInterval);
-                finalCode = document.getElementById('randomCode').textContent;
-                // Add to winners
-                winners.push(finalCode);
-                save();
-                render();
-                confetti();
-                const el = document.getElementById('s' + winners.length);
-                if (el) {
-                    el.style.transform = 'scale(1.06)';
-                    setTimeout(() => el.style.transform = '', 400);
-                }
-                // Hide modal after a bit
+
+            function addW() {
+                // show modal and start randomizing codes
+                const modal = document.getElementById('drawModal');
+                const codeEl = document.getElementById('randomCode');
+                modal.style.display = 'flex';
+
+                drawInterval = setInterval(() => {
+                    const rnd = String(Math.floor(Math.random() * 2000) + 1).padStart(4, '0');
+                    codeEl.textContent = rnd;
+                }, 60);
+
                 setTimeout(() => {
-                    document.getElementById('drawModal').style.display = 'none';
-                }, 1000);
-            }, 3000);
-        }
+                    clearInterval(drawInterval);
 
-        function resetAll() {
-            if (!confirm('Reset all winners?')) return;
-            winners = [];
-            save();
-            render();
-        }
-
-        /* confetti */
-        const cv = document.getElementById('cc');
-        const cx = cv.getContext('2d');
-        let pts = [];
-
-        function rsz() {
-            cv.width = innerWidth;
-            cv.height = innerHeight;
-        }
-        window.addEventListener('resize', rsz);
-        rsz();
-
-        const COLORS = ['#f9c74f', '#4a9ded', '#0d2b6b', '#e02020', '#ffffff', '#a0d4ff', '#ff6b6b', '#4ecdc4'];
-
-        function confetti() {
-            for (let i = 0; i < 140; i++) {
-                pts.push({
-                    x: Math.random() * cv.width,
-                    y: Math.random() * cv.height * .35,
-                    r: Math.random() * 6 + 3,
-                    d: Math.random() * 90 + 10,
-                    c: COLORS[Math.floor(Math.random() * COLORS.length)],
-                    t: 0,
-                    ti: Math.random() * .07 + .04,
-                    life: 180 + Math.random() * 80
-                });
+                    fetch('/api/draw', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute(
+                                    'content') || ''
+                            },
+                            body: JSON.stringify({})
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.error) {
+                                alert(data.error);
+                                modal.style.display = 'none';
+                                return;
+                            }
+                            codeEl.textContent = data.code;
+                            confetti();
+                            // Hide modal after a bit and refresh UI
+                            setTimeout(() => {
+                                modal.style.display = 'none';
+                                loadCurrentPrize();
+                                loadWinners();
+                                loadAllWinners();
+                                loadStats();
+                            }, 2000);
+                        })
+                        .catch(error => {
+                            console.error('Error drawing:', error);
+                            modal.style.display = 'none';
+                        });
+                }, 3000);
             }
-            if (!anim) loop();
-        }
 
-        let anim = false;
-
-        function loop() {
-            if (!pts.length) {
-                anim = false;
-                cx.clearRect(0, 0, cv.width, cv.height);
-                return;
+            function loadStats() {
+                fetch('/api/stats')
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('totalPrizes').textContent = data.totalPrizes;
+                        // totalWinners and remainingCodes come from the global stats
+                        if (document.getElementById('totalWinners')) {
+                            document.getElementById('totalWinners').textContent = data.totalWinners;
+                        }
+                        if (document.getElementById('remainingCodes')) {
+                            document.getElementById('remainingCodes').textContent = data
+                                .remainingCodes;
+                        }
+                    })
+                    .catch(error => console.error('Error loading stats:', error));
             }
-            anim = true;
-            cx.clearRect(0, 0, cv.width, cv.height);
-            pts.forEach(p => {
-                p.t += p.ti;
-                p.y += (Math.cos(p.d) + 3 + p.r / 2) * .55;
-                p.x += Math.sin(p.d) * 1.1;
-                p.life--;
-                cx.globalAlpha = Math.min(1, p.life / 50);
-                cx.fillStyle = p.c;
-                cx.beginPath();
-                cx.ellipse(p.x + Math.sin(p.t) * 10, p.y, p.r, p.r / 2, p.t, 0, 2 * Math.PI);
-                cx.fill();
+
+            // All-winners grouped view disabled — fallback to simple winners list
+            function loadAllWinners() {
+                // Use the existing winners endpoint to show codes-only
+                try {
+                    loadWinners();
+                } catch (e) {
+                    console.error('loadAllWinners fallback error:', e);
+                }
+            }
+
+            // Load data on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                loadCurrentPrize();
+                loadWinners();
+                loadAllWinners();
+                loadStats();
             });
-            cx.globalAlpha = 1;
-            pts = pts.filter(p => p.life > 0 && p.y < cv.height + 20);
-            requestAnimationFrame(loop);
-        }
 
-        render();
-    </script>
+            /* confetti */
+            const cv = document.getElementById('cc');
+            const cx = cv.getContext('2d');
+            let pts = [];
+
+            function rsz() {
+                cv.width = innerWidth;
+                cv.height = innerHeight;
+            }
+            window.addEventListener('resize', rsz);
+            rsz();
+
+            const COLORS = ['#f9c74f', '#4a9ded', '#0d2b6b', '#e02020', '#ffffff', '#a0d4ff', '#ff6b6b',
+                '#4ecdc4'
+            ];
+
+            function confetti() {
+                for (let i = 0; i < 140; i++) {
+                    pts.push({
+                        x: Math.random() * cv.width,
+                        y: Math.random() * cv.height * .35,
+                        r: Math.random() * 6 + 3,
+                        d: Math.random() * 90 + 10,
+                        c: COLORS[Math.floor(Math.random() * COLORS.length)],
+                        t: 0,
+                        ti: Math.random() * .07 + .04,
+                        life: 180 + Math.random() * 80
+                    });
+                }
+                if (!anim) loop();
+            }
+
+            let anim = false;
+
+            function loop() {
+                if (!pts.length) {
+                    anim = false;
+                    cx.clearRect(0, 0, cv.width, cv.height);
+                    return;
+                }
+                anim = true;
+                cx.clearRect(0, 0, cv.width, cv.height);
+                pts.forEach(p => {
+                    p.t += p.ti;
+                    p.y += (Math.cos(p.d) + 3 + p.r / 2) * .55;
+                    p.x += Math.sin(p.d) * 1.1;
+                    p.life--;
+                    cx.globalAlpha = Math.min(1, p.life / 50);
+                    cx.fillStyle = p.c;
+                    cx.beginPath();
+                    cx.ellipse(p.x + Math.sin(p.t) * 10, p.y, p.r, p.r / 2, p.t, 0, 2 * Math
+                        .PI);
+                    cx.fill();
+                });
+                cx.globalAlpha = 1;
+                pts = pts.filter(p => p.life > 0 && p.y < cv.height + 20);
+                requestAnimationFrame(loop);
+            }
+        </script>
 </body>
 
 </html>
