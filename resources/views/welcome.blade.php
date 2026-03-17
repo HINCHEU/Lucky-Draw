@@ -352,6 +352,30 @@
             margin-bottom: 4px;
         }
 
+
+        .prize-winners-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .prize-winners-table th {
+            text-align: left;
+            padding: 10px 12px;
+            font-weight: 700;
+            color: var(--blue-dark);
+            background: rgba(250, 250, 250, 0.6);
+        }
+
+        .prize-winners-table td {
+            padding: 10px 12px;
+            border-top: 1px solid rgba(13, 43, 107, 0.04);
+            color: var(--blue-dark);
+        }
+
         .ptitle {
             font-family: 'Battambang', serif;
             font-size: 1.75rem;
@@ -546,6 +570,11 @@
             gap: 15px;
         }
 
+        /* When showing grouped prize sections, render as stacked full-width rows */
+        .winners-list.grouped {
+            display: block;
+        }
+
         .winner-card {
             background: rgba(255, 255, 255, .7);
             border: 1px solid rgba(255, 255, 255, .8);
@@ -582,6 +611,13 @@
 
         .prize-winners-section {
             margin-bottom: 18px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow: 0 6px 18px rgba(13, 43, 107, 0.06);
         }
 
         .prize-winners-title {
@@ -590,11 +626,30 @@
             margin-bottom: 10px;
         }
 
+        /* hide winners table when toggled off */
+        .prize-winners-section.winners-hidden .prize-winners-table {
+            display: none;
+        }
+
         .prize-winners-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 12px;
             margin-bottom: 6px;
+        }
+
+        .prize-info {
+            flex: 1 1 auto;
+        }
+
+        .prize-photo-small {
+            width: 140px;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            background: rgba(255, 255, 255, 0.9);
+            flex: 0 0 140px;
         }
 
 
@@ -764,9 +819,7 @@
             <!-- reset button intentionally removed -->
 
         </div>
-
-        <!-- WINNERS SECTION -->
-        <div class="winners-section" style="margin: 40px auto; max-width: 1180px; padding: 0 20px;">
+        <div class="winners-section" style="margin: 40px 0; width: 100%; padding: 0 20px; max-width: none;">
             <div class="gc">
                 <div class="stitle">🏆 បញ្ជីអ្នកឈ្នះទាំងអស់ / All Winners</div>
                 <div id="winnersList" class="winners-list">
@@ -774,231 +827,346 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- DRAW MODAL -->
-        <div id="drawModal" class="draw-modal" style="display: none;">
-            <div class="draw-content">
-                <h2>ការចាប់រង្វាន់</h2>
-                <div class="draw-code" id="randomCode">0000</div>
-            </div>
+    <!-- DRAW MODAL -->
+    <div id="drawModal" class="draw-modal" style="display: none;">
+        <div class="draw-content">
+            <h2>ការចាប់រង្វាន់</h2>
+            <div class="draw-code" id="randomCode">0000</div>
         </div>
+    </div>
 
-        <footer>© 2025 CE&amp;P Corporation — Optimize Your Investment</footer>
+    <footer>© 2025 CE&amp;P Corporation — Optimize Your Investment</footer>
 
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-        <script>
-            let currentPrize = null;
-            let remainingCodes = [];
-            let drawInterval;
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentPrize = null;
+        let remainingCodes = [];
+        let drawInterval;
 
-            function loadCurrentPrize() {
-                fetch('/api/current-prize')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.error) {
-                            document.getElementById('prizeTitle').textContent = 'រង្វាន់អស់ហើយ';
-                            document.getElementById('prizeDesc').textContent = '🎁 No prizes available';
-                            document.getElementById('prizeImg').style.display = 'none';
-                            document.getElementById('remainingCount').textContent = '0';
-                            document.getElementById('totalCount').textContent = '0';
-                            document.getElementById('wc').textContent = '0';
-                            return;
-                        }
-                        currentPrize = data;
-                        document.getElementById('prizeTitle').textContent = data.name;
-                        document.getElementById('prizeDesc').textContent = '🎁 ' + (data.description || data.name);
-                        if (data.photo_path) {
-                            document.getElementById('prizeImg').src = '/storage/' + data.photo_path;
-                            document.getElementById('prizeImg').style.display = 'block';
-                        } else {
-                            document.getElementById('prizeImg').style.display = 'none';
-                        }
-                        document.getElementById('remainingCount').textContent = data.remaining;
-                        document.getElementById('totalCount').textContent = data.total;
-                        document.getElementById('wc').textContent = data.won;
-                    })
-                    .catch(error => console.error('Error loading prize:', error));
-            }
+        function loadCurrentPrize() {
+            fetch('/api/current-prize')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('prizeTitle').textContent = 'រង្វាន់អស់ហើយ';
+                        document.getElementById('prizeDesc').textContent = '🎁 No prizes available';
+                        document.getElementById('prizeImg').style.display = 'none';
+                        document.getElementById('remainingCount').textContent = '0';
+                        document.getElementById('totalCount').textContent = '0';
+                        document.getElementById('wc').textContent = '0';
+                        return;
+                    }
+                    currentPrize = data;
+                    document.getElementById('prizeTitle').textContent = data.name;
+                    document.getElementById('prizeDesc').textContent = '🎁 ' + (data.description || data.name);
+                    if (data.photo_path) {
+                        document.getElementById('prizeImg').src = '/storage/' + data.photo_path;
+                        document.getElementById('prizeImg').style.display = 'block';
+                    } else {
+                        document.getElementById('prizeImg').style.display = 'none';
+                    }
+                    document.getElementById('remainingCount').textContent = data.remaining;
+                    document.getElementById('totalCount').textContent = data.total;
+                    document.getElementById('wc').textContent = data.won;
+                })
+                .catch(error => console.error('Error loading prize:', error));
+        }
 
-            function loadWinners() {
-                fetch('/api/winners')
-                    .then(response => response.json())
-                    .then(data => {
-                        const list = document.getElementById('winnersList');
-                        list.innerHTML = '';
-                        data.forEach(winner => {
-                            const card = document.createElement('div');
-                            card.className = 'winner-card';
-                            // Show only the winner code (no names/prizes)
-                            card.innerHTML = `
+        function loadWinners() {
+            fetch('/api/winners')
+                .then(response => response.json())
+                .then(data => {
+                    const list = document.getElementById('winnersList');
+                    list.classList.add('grouped');
+                    list.innerHTML = '';
+                    data.forEach(winner => {
+                        const card = document.createElement('div');
+                        card.className = 'winner-card';
+                        // Show only the winner code (no names/prizes)
+                        card.innerHTML = `
                             <div class="winner-code">${winner.code}</div>
                         `;
-                            list.appendChild(card);
-                        });
-                        // Update total winners
-                        document.getElementById('totalWinners').textContent = data.length;
+                        list.appendChild(card);
+                    });
+                    // Update total winners
+                    document.getElementById('totalWinners').textContent = data.length;
 
-                        // Populate winner codes list (latest first)
-                        const codesList = document.getElementById('winnerCodesList');
-                        codesList.innerHTML = '';
-                        data.slice(0, 10).forEach((winner, index) => {
-                            const item = document.createElement('div');
-                            item.className = 'winner-code-item';
-                            item.innerHTML = `
+                    // Populate winner codes list (latest first)
+                    const codesList = document.getElementById('winnerCodesList');
+                    codesList.innerHTML = '';
+                    data.slice(0, 10).forEach((winner, index) => {
+                        const item = document.createElement('div');
+                        item.className = 'winner-code-item';
+                        item.innerHTML = `
                                 <div class="winner-code-number">${index + 1}</div>
                                 <div class="winner-code-text">🏅 ${winner.code}</div>
                             `;
-                            codesList.appendChild(item);
-                        });
+                        codesList.appendChild(item);
+                    });
 
-                        // Refresh global stats (remaining codes should be based on ALL winners)
-                        loadStats();
+                    // Refresh global stats (remaining codes should be based on ALL winners)
+                    loadStats();
+                })
+                .catch(error => console.error('Error loading winners:', error));
+        }
+
+        function addW() {
+            // show modal and start randomizing codes
+            const modal = document.getElementById('drawModal');
+            const codeEl = document.getElementById('randomCode');
+            modal.style.display = 'flex';
+
+            drawInterval = setInterval(() => {
+                const rnd = String(Math.floor(Math.random() * 2000) + 1).padStart(4, '0');
+                codeEl.textContent = rnd;
+            }, 60);
+
+            setTimeout(() => {
+                clearInterval(drawInterval);
+
+                fetch('/api/draw', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute(
+                                'content') || ''
+                        },
+                        body: JSON.stringify({})
                     })
-                    .catch(error => console.error('Error loading winners:', error));
-            }
-
-            function addW() {
-                // show modal and start randomizing codes
-                const modal = document.getElementById('drawModal');
-                const codeEl = document.getElementById('randomCode');
-                modal.style.display = 'flex';
-
-                drawInterval = setInterval(() => {
-                    const rnd = String(Math.floor(Math.random() * 2000) + 1).padStart(4, '0');
-                    codeEl.textContent = rnd;
-                }, 60);
-
-                setTimeout(() => {
-                    clearInterval(drawInterval);
-
-                    fetch('/api/draw', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute(
-                                    'content') || ''
-                            },
-                            body: JSON.stringify({})
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.error) {
-                                alert(data.error);
-                                modal.style.display = 'none';
-                                return;
-                            }
-                            codeEl.textContent = data.code;
-                            confetti();
-                            // Hide modal after a bit and refresh UI
-                            setTimeout(() => {
-                                modal.style.display = 'none';
-                                loadCurrentPrize();
-                                loadWinners();
-                                loadAllWinners();
-                                loadStats();
-                            }, 2000);
-                        })
-                        .catch(error => {
-                            console.error('Error drawing:', error);
-                            modal.style.display = 'none';
-                        });
-                }, 3000);
-            }
-
-            function loadStats() {
-                fetch('/api/stats')
                     .then(response => response.json())
                     .then(data => {
-                        document.getElementById('totalPrizes').textContent = data.totalPrizes;
-                        // totalWinners and remainingCodes come from the global stats
-                        if (document.getElementById('totalWinners')) {
-                            document.getElementById('totalWinners').textContent = data.totalWinners;
+                        if (data.error) {
+                            alert(data.error);
+                            modal.style.display = 'none';
+                            return;
                         }
-                        if (document.getElementById('remainingCodes')) {
-                            document.getElementById('remainingCodes').textContent = data
-                                .remainingCodes;
-                        }
+                        codeEl.textContent = data.code;
+                        confetti();
+                        // Hide modal after a bit and refresh UI
+                        setTimeout(() => {
+                            modal.style.display = 'none';
+                            loadCurrentPrize();
+                            loadWinners();
+                            loadAllWinners();
+                            loadStats();
+                        }, 2000);
                     })
-                    .catch(error => console.error('Error loading stats:', error));
-            }
-
-            // All-winners grouped view disabled — fallback to simple winners list
-            function loadAllWinners() {
-                // Use the existing winners endpoint to show codes-only
-                try {
-                    loadWinners();
-                } catch (e) {
-                    console.error('loadAllWinners fallback error:', e);
-                }
-            }
-
-            // Load data on page load
-            document.addEventListener('DOMContentLoaded', function() {
-                loadCurrentPrize();
-                loadWinners();
-                loadAllWinners();
-                loadStats();
-            });
-
-            /* confetti */
-            const cv = document.getElementById('cc');
-            const cx = cv.getContext('2d');
-            let pts = [];
-
-            function rsz() {
-                cv.width = innerWidth;
-                cv.height = innerHeight;
-            }
-            window.addEventListener('resize', rsz);
-            rsz();
-
-            const COLORS = ['#f9c74f', '#4a9ded', '#0d2b6b', '#e02020', '#ffffff', '#a0d4ff', '#ff6b6b',
-                '#4ecdc4'
-            ];
-
-            function confetti() {
-                for (let i = 0; i < 140; i++) {
-                    pts.push({
-                        x: Math.random() * cv.width,
-                        y: Math.random() * cv.height * .35,
-                        r: Math.random() * 6 + 3,
-                        d: Math.random() * 90 + 10,
-                        c: COLORS[Math.floor(Math.random() * COLORS.length)],
-                        t: 0,
-                        ti: Math.random() * .07 + .04,
-                        life: 180 + Math.random() * 80
+                    .catch(error => {
+                        console.error('Error drawing:', error);
+                        modal.style.display = 'none';
                     });
-                }
-                if (!anim) loop();
-            }
+            }, 3000);
+        }
 
-            let anim = false;
+        function loadStats() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('totalPrizes').textContent = data.totalPrizes;
+                    // totalWinners and remainingCodes come from the global stats
+                    if (document.getElementById('totalWinners')) {
+                        document.getElementById('totalWinners').textContent = data.totalWinners;
+                    }
+                    if (document.getElementById('remainingCodes')) {
+                        document.getElementById('remainingCodes').textContent = data
+                            .remainingCodes;
+                    }
+                })
+                .catch(error => console.error('Error loading stats:', error));
+        }
 
-            function loop() {
-                if (!pts.length) {
-                    anim = false;
-                    cx.clearRect(0, 0, cv.width, cv.height);
-                    return;
-                }
-                anim = true;
-                cx.clearRect(0, 0, cv.width, cv.height);
-                pts.forEach(p => {
-                    p.t += p.ti;
-                    p.y += (Math.cos(p.d) + 3 + p.r / 2) * .55;
-                    p.x += Math.sin(p.d) * 1.1;
-                    p.life--;
-                    cx.globalAlpha = Math.min(1, p.life / 50);
-                    cx.fillStyle = p.c;
-                    cx.beginPath();
-                    cx.ellipse(p.x + Math.sin(p.t) * 10, p.y, p.r, p.r / 2, p.t, 0, 2 * Math
-                        .PI);
-                    cx.fill();
+        // Load all winners grouped by prize (shows prize info + winners)
+        function loadAllWinners() {
+            fetch('/api/winners-all')
+                .then(response => response.json())
+                .then(data => {
+                    const list = document.getElementById('winnersList');
+                    list.classList.add('grouped');
+                    list.innerHTML = '';
+
+                    data.forEach(prize => {
+                        const section = document.createElement('div');
+                        section.className = 'prize-winners-section';
+
+                        const info = document.createElement('div');
+                        info.className = 'prize-info';
+
+                        const titleRow = document.createElement('div');
+                        titleRow.style.display = 'flex';
+                        titleRow.style.alignItems = 'center';
+                        titleRow.style.justifyContent = 'space-between';
+
+                        const title = document.createElement('div');
+                        title.className = 'prize-winners-title';
+                        title.textContent = `${prize.name} (${prize.winners.length}/${prize.quantity})`;
+
+                        // visibility toggle
+                        const toggleWrap = document.createElement('div');
+                        toggleWrap.style.display = 'flex';
+                        toggleWrap.style.alignItems = 'center';
+                        toggleWrap.style.gap = '8px';
+
+                        const toggleLabel = document.createElement('label');
+                        toggleLabel.style.fontSize = '0.9rem';
+                        toggleLabel.style.color = 'var(--blue-mid)';
+                        toggleLabel.textContent = 'Show winners';
+
+                        const toggle = document.createElement('input');
+                        toggle.type = 'checkbox';
+                        toggle.id = `toggle-prize-${prize.id}`;
+                        // read saved preference (default: true)
+                        try {
+                            const saved = localStorage.getItem('prize_visible_' + prize.id);
+                            toggle.checked = saved === null ? true : (saved === '1');
+                        } catch (e) {
+                            toggle.checked = true;
+                        }
+
+                        toggle.addEventListener('change', function() {
+                            const sectionEl = section;
+                            if (!this.checked) {
+                                sectionEl.classList.add('winners-hidden');
+                            } else {
+                                sectionEl.classList.remove('winners-hidden');
+                            }
+                            try {
+                                localStorage.setItem('prize_visible_' + prize.id, this.checked ? '1' :
+                                    '0');
+                            } catch (e) {}
+                        });
+
+                        toggleWrap.appendChild(toggle);
+                        toggleWrap.appendChild(toggleLabel);
+
+                        titleRow.appendChild(title);
+                        titleRow.appendChild(toggleWrap);
+                        info.appendChild(titleRow);
+
+                        // apply initial visibility according to saved toggle state
+                        try {
+                            if (!toggle.checked) {
+                                section.classList.add('winners-hidden');
+                            }
+                        } catch (e) {}
+
+                        // create a table for winners
+                        const table = document.createElement('table');
+                        table.className = 'prize-winners-table';
+                        const thead = document.createElement('thead');
+                        thead.innerHTML = '<tr><th>#</th><th>Code</th><th>Drawn At</th></tr>';
+                        table.appendChild(thead);
+
+                        const tbody = document.createElement('tbody');
+                        if (!prize.winners || prize.winners.length === 0) {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = '<td colspan="3">No winners yet</td>';
+                            tbody.appendChild(tr);
+                        } else {
+                            prize.winners.forEach((w, idx) => {
+                                const tr = document.createElement('tr');
+                                tr.innerHTML =
+                                    `<td>${idx + 1}</td><td>${String(w.code).padStart(4,'0')}</td><td>${new Date(w.drawn_at).toLocaleString()}</td>`;
+                                tbody.appendChild(tr);
+                            });
+                        }
+
+                        table.appendChild(tbody);
+                        info.appendChild(table);
+
+                        // photo column
+                        const photoCol = document.createElement('div');
+                        if (prize.photo_path) {
+                            const img = document.createElement('img');
+                            img.className = 'prize-photo-small';
+                            img.src = prize.photo_path.startsWith('/') ? prize.photo_path : '/storage/' + prize
+                                .photo_path;
+                            img.alt = prize.name;
+                            photoCol.appendChild(img);
+                        }
+
+                        section.appendChild(info);
+                        section.appendChild(photoCol);
+                        list.appendChild(section);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading all winners:', error);
+                    // fallback to simple list
+                    const listEl = document.getElementById('winnersList');
+                    if (listEl) listEl.classList.remove('grouped');
+                    loadWinners();
                 });
-                cx.globalAlpha = 1;
-                pts = pts.filter(p => p.life > 0 && p.y < cv.height + 20);
-                requestAnimationFrame(loop);
+        }
+
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCurrentPrize();
+            loadWinners();
+            loadAllWinners();
+            loadStats();
+        });
+
+        /* confetti */
+        const cv = document.getElementById('cc');
+        const cx = cv.getContext('2d');
+        let pts = [];
+
+        function rsz() {
+            cv.width = innerWidth;
+            cv.height = innerHeight;
+        }
+        window.addEventListener('resize', rsz);
+        rsz();
+
+        const COLORS = ['#f9c74f', '#4a9ded', '#0d2b6b', '#e02020', '#ffffff', '#a0d4ff', '#ff6b6b',
+            '#4ecdc4'
+        ];
+
+        function confetti() {
+            for (let i = 0; i < 140; i++) {
+                pts.push({
+                    x: Math.random() * cv.width,
+                    y: Math.random() * cv.height * .35,
+                    r: Math.random() * 6 + 3,
+                    d: Math.random() * 90 + 10,
+                    c: COLORS[Math.floor(Math.random() * COLORS.length)],
+                    t: 0,
+                    ti: Math.random() * .07 + .04,
+                    life: 180 + Math.random() * 80
+                });
             }
-        </script>
+            if (!anim) loop();
+        }
+
+        let anim = false;
+
+        function loop() {
+            if (!pts.length) {
+                anim = false;
+                cx.clearRect(0, 0, cv.width, cv.height);
+                return;
+            }
+            anim = true;
+            cx.clearRect(0, 0, cv.width, cv.height);
+            pts.forEach(p => {
+                p.t += p.ti;
+                p.y += (Math.cos(p.d) + 3 + p.r / 2) * .55;
+                p.x += Math.sin(p.d) * 1.1;
+                p.life--;
+                cx.globalAlpha = Math.min(1, p.life / 50);
+                cx.fillStyle = p.c;
+                cx.beginPath();
+                cx.ellipse(p.x + Math.sin(p.t) * 10, p.y, p.r, p.r / 2, p.t, 0, 2 * Math
+                    .PI);
+                cx.fill();
+            });
+            cx.globalAlpha = 1;
+            pts = pts.filter(p => p.life > 0 && p.y < cv.height + 20);
+            requestAnimationFrame(loop);
+        }
+    </script>
 </body>
 
 </html>
