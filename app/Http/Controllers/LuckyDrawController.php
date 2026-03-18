@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Prize;
 use App\Models\Winner;
+use App\Models\Draw;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -11,26 +12,47 @@ class LuckyDrawController extends Controller
 {
     public function index()
     {
-        $currentPrize = Prize::where('order', '>', 0)
-            ->orderBy('order')
-            ->whereRaw('(quantity - (SELECT COUNT(*) FROM winners WHERE winners.prize_id = prizes.id)) > 0')
-            ->first();
+        $activeDraw = Draw::where('active', true)->first();
 
-        $prizes = Prize::orderBy('order')->get();
-        $winners = Winner::with('prize')->orderBy('drawn_at', 'desc')->get();
+        if ($activeDraw) {
+            $currentPrize = Prize::where('draw_id', $activeDraw->id)
+                ->where('order', '>', 0)
+                ->orderBy('order')
+                ->whereRaw('(quantity - (SELECT COUNT(*) FROM winners WHERE winners.prize_id = prizes.id)) > 0')
+                ->first();
+
+            $prizes = Prize::where('draw_id', $activeDraw->id)->orderBy('order')->get();
+
+            $winners = Winner::with('prize')
+                ->whereHas('prize', function ($q) use ($activeDraw) {
+                    $q->where('draw_id', $activeDraw->id);
+                })
+                ->orderBy('drawn_at', 'desc')
+                ->get();
+        } else {
+            $currentPrize = null;
+            $prizes = Prize::orderBy('order')->get();
+            $winners = Winner::with('prize')->orderBy('drawn_at', 'desc')->get();
+        }
 
         return view('welcome', compact('currentPrize', 'prizes', 'winners'));
     }
 
     public function getCurrentPrize()
     {
-        $prize = Prize::where('order', '>', 0)
+        $activeDraw = Draw::where('active', true)->first();
+        if (! $activeDraw) {
+            return response()->json(['error' => 'No active draw']);
+        }
+
+        $prize = Prize::where('draw_id', $activeDraw->id)
+            ->where('order', '>', 0)
             ->orderBy('order')
             ->whereRaw('(quantity - (SELECT COUNT(*) FROM winners WHERE winners.prize_id = prizes.id)) > 0')
             ->first();
 
-        if (!$prize) {
-            return response()->json(['error' => 'No prizes available']);
+        if (! $prize) {
+            return response()->json(['error' => 'No prizes available for active draw']);
         }
 
         return response()->json([
@@ -40,24 +62,41 @@ class LuckyDrawController extends Controller
             'photo_path' => $prize->photo_path,
             'remaining' => $prize->availableQuantity(),
             'total' => $prize->quantity,
-            'won' => $prize->quantity - $prize->availableQuantity()
+            'won' => $prize->quantity - $prize->availableQuantity(),
+            'start_code' => $activeDraw->start_code,
+            'end_code' => $activeDraw->end_code
         ]);
     }
 
     public function draw(Request $request)
     {
-        $prize = Prize::where('order', '>', 0)
+        $activeDraw = Draw::where('active', true)->first();
+        if (! $activeDraw) {
+            return response()->json(['error' => 'No active draw']);
+        }
+
+        $prize = Prize::where('draw_id', $activeDraw->id)
+            ->where('order', '>', 0)
             ->orderBy('order')
             ->whereRaw('(quantity - (SELECT COUNT(*) FROM winners WHERE winners.prize_id = prizes.id)) > 0')
             ->first();
 
-        if (!$prize) {
-            return response()->json(['error' => 'No prizes available']);
+        if (! $prize) {
+            return response()->json(['error' => 'No prizes available for active draw']);
         }
 
-        // Get remaining codes (not drawn for any prize)
-        $drawnCodes = Winner::pluck('code')->toArray();
-        $allCodes = range(1, 2000);
+        $drawnCodes = Winner::whereHas('prize', function ($q) use ($activeDraw) {
+            $q->where('draw_id', $activeDraw->id);
+        })->pluck('code')->toArray();
+        $start = $activeDraw->start_code;
+        $end = $activeDraw->end_code;
+
+        // Ensure start and end codes are valid
+        if ($start === null || $end === null || $start > $end) {
+            return response()->json(['error' => 'Invalid code range for the active draw']);
+        }
+
+        $allCodes = range((int)$start, (int)$end);
         $availableCodes = array_diff($allCodes, $drawnCodes);
 
         if (empty($availableCodes)) {
@@ -84,13 +123,18 @@ class LuckyDrawController extends Controller
     // Return winners only for the current prize
     public function getWinners()
     {
-        $prize = Prize::where('order', '>', 0)
+        $activeDraw = Draw::where('active', true)->first();
+        if (! $activeDraw) {
+            return response()->json([]);
+        }
+
+        $prize = Prize::where('draw_id', $activeDraw->id)
+            ->where('order', '>', 0)
             ->orderBy('order')
             ->whereRaw('(quantity - (SELECT COUNT(*) FROM winners WHERE winners.prize_id = prizes.id)) > 0')
             ->first();
 
         if (! $prize) {
-            // No active prize — return empty array
             return response()->json([]);
         }
 
@@ -108,10 +152,15 @@ class LuckyDrawController extends Controller
         return response()->json($winners);
     }
 
-    // Return all prizes with their winners (grouped)
+    // Return all prizes with their winners (grouped) for the active draw only
     public function getAllWinners()
     {
-        $prizes = Prize::orderBy('order')->get();
+        $activeDraw = Draw::where('active', true)->first();
+        if (! $activeDraw) {
+            return response()->json([]);
+        }
+
+        $prizes = Prize::where('draw_id', $activeDraw->id)->orderBy('order')->get();
 
         $result = $prizes->map(function ($p) {
             $w = $p->winners()->orderBy('drawn_at', 'desc')->get()->map(function ($win) {
@@ -135,8 +184,72 @@ class LuckyDrawController extends Controller
 
     public function admin()
     {
-        $prizes = Prize::orderBy('order')->get();
-        return view('admin', compact('prizes'));
+        return redirect('/admin/draws');
+    }
+
+    public function drawsIndex()
+    {
+        $draws = Draw::withCount('prizes')->orderBy('draw_date', 'desc')->get();
+        $activeDraw = Draw::where('active', true)->first();
+        return view('admin.draws', compact('draws', 'activeDraw'));
+    }
+
+    public function showDraw(Draw $draw)
+    {
+        $prizes = $draw->prizes()->orderBy('order')->get();
+        $winners = Winner::whereHas('prize', function ($q) use ($draw) {
+            $q->where('draw_id', $draw->id);
+        })->with('prize')->orderBy('drawn_at', 'desc')->get();
+        $activeDraw = Draw::where('active', true)->first();
+        return view('admin.draw', compact('draw', 'prizes', 'winners', 'activeDraw'));
+    }
+
+    public function updateDraw(Request $request, Draw $draw)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'draw_date' => 'nullable|date',
+            'active' => 'nullable|boolean',
+            'start_code' => 'nullable|integer|min:0',
+            'end_code' => 'nullable|integer|min:0'
+        ]);
+
+        $start = $request->input('start_code');
+        $end = $request->input('end_code');
+        if ($start !== null && $end !== null && $start > $end) {
+            return redirect()->back()->with('error', 'Start code must be less than or equal to end code');
+        }
+
+        if ($request->has('active') && $request->boolean('active')) {
+            Draw::where('id', '!=', $draw->id)->update(['active' => false]);
+            $draw->active = true;
+        } else {
+            $draw->active = false;
+        }
+
+        $draw->update([
+            'name' => $request->name,
+            'description' => $request->description,
+            'draw_date' => $request->draw_date ?: null,
+            'start_code' => $start ?: 1,
+            'end_code' => $end ?: 2000,
+        ]);
+
+        return redirect("/admin/draws/{$draw->id}")->with('success', 'Draw updated');
+    }
+
+    public function storePrizeForDraw(Request $request, Draw $draw)
+    {
+        $request->merge(['draw_id' => $draw->id]);
+        return $this->storePrize($request);
+    }
+
+    public function prizesIndex()
+    {
+        $prizes = Prize::with('draw')->orderBy('order')->get();
+        $draws = Draw::orderBy('draw_date', 'desc')->get();
+        return view('admin.prizes', compact('prizes', 'draws'));
     }
 
     public function storePrize(Request $request)
@@ -146,7 +259,8 @@ class LuckyDrawController extends Controller
             'description' => 'nullable|string',
             'photo' => 'nullable|image|max:2048',
             'quantity' => 'required|integer|min:1',
-            'order' => 'required|integer|min:1'
+            'order' => 'required|integer|min:1',
+            'draw_id' => 'nullable|exists:draws,id'
         ]);
 
         $photoPath = null;
@@ -159,24 +273,98 @@ class LuckyDrawController extends Controller
             'description' => $request->description,
             'photo_path' => $photoPath,
             'quantity' => $request->quantity,
-            'order' => $request->order
+            'order' => $request->order,
+            'draw_id' => $request->draw_id
         ]);
 
-        return redirect('/admin')->with('success', 'Prize added successfully');
+        return redirect()->back()->with('success', 'Prize added successfully');
+    }
+
+    public function storeDraw(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'draw_date' => 'nullable|date',
+            'active' => 'nullable|boolean',
+            'start_code' => 'nullable|integer|min:0',
+            'end_code' => 'nullable|integer|min:0'
+        ]);
+
+        // enforce start <= end if both provided
+        $start = $request->input('start_code');
+        $end = $request->input('end_code');
+        if ($start !== null && $end !== null && $start > $end) {
+            return redirect('/admin')->with('error', 'Start code must be less than or equal to end code');
+        }
+
+        $draw = Draw::create([
+            'name' => $request->name,
+            'description' => $request->description,
+            'draw_date' => $request->draw_date ?: null,
+            'active' => $request->has('active') ? (bool)$request->active : false,
+            'start_code' => $start ?: 1,
+            'end_code' => $end ?: 2000,
+        ]);
+
+        return redirect('/admin/draws')->with('success', 'Draw created');
+    }
+
+    public function activateDraw(Draw $draw)
+    {
+        // deactivate others
+        Draw::where('id', '!=', $draw->id)->update(['active' => false]);
+        $draw->active = true;
+        $draw->save();
+        return redirect('/admin/draws')->with('success', 'Active draw set');
+    }
+
+    public function deleteDraw(Draw $draw)
+    {
+        if ($draw->prizes()->count() > 0) {
+            return redirect('/admin/draws')->with('error', 'Cannot delete draw with prizes. Remove its prizes first.');
+        }
+
+        $draw->delete();
+        return redirect('/admin/draws')->with('success', 'Draw deleted');
     }
 
     public function deletePrize(Prize $prize)
     {
         if ($prize->winners()->count() > 0) {
-            return redirect('/admin')->with('error', 'Cannot delete prize with winners');
+            return redirect()->back()->with('error', 'Cannot delete prize with winners');
         }
         $prize->delete();
-        return redirect('/admin')->with('success', 'Prize deleted successfully');
+        return redirect()->back()->with('success', 'Prize deleted successfully');
     }
 
     public function getStats()
     {
+        $activeDraw = Draw::where('active', true)->first();
+
+        if ($activeDraw) {
+            $totalWinners = Winner::whereHas('prize', function ($q) use ($activeDraw) {
+                $q->where('draw_id', $activeDraw->id);
+            })->count();
+
+            $totalPrizes = Prize::where('draw_id', $activeDraw->id)->sum('quantity');
+
+            // Calculate remaining codes based on the code range (start_code to end_code)
+            $totalCodesInRange = ($activeDraw->end_code - $activeDraw->start_code) + 1;
+            $remainingCodes = max($totalCodesInRange - $totalWinners, 0);
+
+            return response()->json([
+                'active_draw' => true,
+                'draw_id' => $activeDraw->id,
+                'draw_name' => $activeDraw->name,
+                'totalPrizes' => $totalPrizes,
+                'totalWinners' => $totalWinners,
+                'remainingCodes' => $remainingCodes
+            ]);
+        }
+
         return response()->json([
+            'active_draw' => false,
             'totalPrizes' => Prize::sum('quantity'),
             'totalWinners' => Winner::count(),
             'remainingCodes' => 2000 - Winner::count()

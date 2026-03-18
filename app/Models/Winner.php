@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class Winner extends Model
 {
     protected $fillable = ['prize_id', 'code', 'drawn_at'];
+    protected $casts = [
+        'drawn_at' => 'datetime',
+    ];
 
     public function prize()
     {

@@ -144,7 +144,7 @@
 
         header img.logo {
             height: 60px;
-            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, .4));
+            filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.8)) drop-shadow(0 2px 8px rgba(0, 0, 0, .4));
         }
 
         .fallback-logo {
@@ -762,7 +762,7 @@
 
     <!-- HEADER -->
     <header>
-        <img id="logoImg" src="CE_P_Logo.png" class="logo" alt="CE&P Logo"
+        <img id="logoImg" src="logo/CE&P_Logo_Res600.png" class="logo" alt="CE&P Logo"
             onerror="this.style.display='none'; document.getElementById('fbLogo').style.display='block'">
         <div id="fbLogo" class="fallback-logo" style="display:none">
             CE<span class="amp">&amp;</span>P<small>CORPORATION</small>
@@ -814,7 +814,7 @@
             <div class="wcount">🏅 អ្នកឈ្នះ: <strong id="wc">0</strong>&nbsp;/ <span id="totalCount">0</span>
             </div>
             <div style="text-align: center; margin-top: 20px;">
-                <button class="btn-draw" onclick="addW()">ចាប់រង្វាន់ ✦</button>
+                <button id="drawBtn" class="btn-draw" onclick="addW()">ចាប់រង្វាន់ ✦</button>
             </div>
             <!-- reset button intentionally removed -->
 
@@ -849,16 +849,27 @@
             fetch('/api/current-prize')
                 .then(response => response.json())
                 .then(data => {
+                    const drawBtn = document.getElementById('drawBtn');
                     if (data.error) {
+                        // If there's no active draw or no prizes for active draw, disable draw button
                         document.getElementById('prizeTitle').textContent = 'រង្វាន់អស់ហើយ';
-                        document.getElementById('prizeDesc').textContent = '🎁 No prizes available';
+                        document.getElementById('prizeDesc').textContent = data.error || '🎁 No prizes available';
                         document.getElementById('prizeImg').style.display = 'none';
                         document.getElementById('remainingCount').textContent = '0';
                         document.getElementById('totalCount').textContent = '0';
                         document.getElementById('wc').textContent = '0';
+                        currentPrize = null;
+                        if (drawBtn) {
+                            drawBtn.disabled = true;
+                            drawBtn.style.opacity = 0.6;
+                        }
                         return;
                     }
                     currentPrize = data;
+                    if (drawBtn) {
+                        drawBtn.disabled = false;
+                        drawBtn.style.opacity = 1;
+                    }
                     document.getElementById('prizeTitle').textContent = data.name;
                     document.getElementById('prizeDesc').textContent = '🎁 ' + (data.description || data.name);
                     if (data.photo_path) {
@@ -913,14 +924,24 @@
         }
 
         function addW() {
+            const drawBtn = document.getElementById('drawBtn');
+            if (drawBtn && drawBtn.disabled) return;
+            if (!currentPrize) {
+                alert('No active draw or no prize available. Please ask admin to activate a draw.');
+                return;
+            }
             // show modal and start randomizing codes
             const modal = document.getElementById('drawModal');
             const codeEl = document.getElementById('randomCode');
             modal.style.display = 'flex';
 
+            const startCode = parseInt(currentPrize.start_code) || 1;
+            const endCode = parseInt(currentPrize.end_code) || 2000;
+            const range = endCode - startCode + 1;
+
             drawInterval = setInterval(() => {
-                const rnd = String(Math.floor(Math.random() * 2000) + 1).padStart(4, '0');
-                codeEl.textContent = rnd;
+                const rnd = startCode + Math.floor(Math.random() * range);
+                codeEl.textContent = String(rnd).padStart(4, '0');
             }, 60);
 
             setTimeout(() => {
