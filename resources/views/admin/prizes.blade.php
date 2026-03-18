@@ -70,7 +70,11 @@
                 @forelse ($prizes as $prize)
                     <div class="prize-card">
                         @if ($prize->photo_path)
-                            <img src="/storage/{{ $prize->photo_path }}" alt="{{ $prize->name }}">
+                            <div
+                                style="width:100%; height:180px; background:var(--navy3); display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:12px 12px 0 0; padding:8px;">
+                                <img src="/storage/{{ $prize->photo_path }}" alt="{{ $prize->name }}"
+                                    style="max-width:100%; max-height:164px; width:auto; height:auto; object-fit:contain; display:block; border-radius:6px;">
+                            </div>
                         @else
                             <div class="prize-card-placeholder">🎁</div>
                         @endif

@@ -791,7 +791,7 @@
                 </div>
                 <div class="stat-item">
                     <div class="stat-number" id="remainingCodes">2000</div>
-                    <div class="stat-label">Available Codes</div>
+                    <div class="stat-label">Remaining Tickets</div>
                 </div>
             </div>
             <div class="stat-item" style="padding: 10px 12px;margin-top: 10px;">
