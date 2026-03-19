@@ -6,6 +6,7 @@ use App\Http\Controllers\LuckyDrawController;
 Route::get('/', [LuckyDrawController::class, 'index']);
 Route::get('/api/current-prize', [LuckyDrawController::class, 'getCurrentPrize']);
 Route::post('/api/draw', [LuckyDrawController::class, 'draw']);
+Route::post('/api/draw-all', [LuckyDrawController::class, 'drawAll']);
 Route::get('/api/winners', [LuckyDrawController::class, 'getWinners']);
 Route::get('/api/winners-all', [LuckyDrawController::class, 'getAllWinners']);
 Route::get('/api/stats', [LuckyDrawController::class, 'getStats']);
@@ -22,4 +23,8 @@ Route::delete('/admin/draws/{draw}', [LuckyDrawController::class, 'deleteDraw'])
 
 Route::get('/admin/prizes', [LuckyDrawController::class, 'prizesIndex']);
 Route::post('/admin/prizes', [LuckyDrawController::class, 'storePrize']);
+Route::get('/admin/prizes/{prize}', [LuckyDrawController::class, 'showPrize']);
+Route::put('/admin/prizes/{prize}', [LuckyDrawController::class, 'updatePrize']);
 Route::delete('/admin/prizes/{prize}', [LuckyDrawController::class, 'deletePrize']);
+
+Route::delete('/api/winners/{winner}', [LuckyDrawController::class, 'deleteWinner']);

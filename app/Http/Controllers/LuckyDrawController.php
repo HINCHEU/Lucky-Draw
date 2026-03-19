@@ -119,7 +119,69 @@ class LuckyDrawController extends Controller
             'remaining' => $prize->availableQuantity() - 1
         ]);
     }
+    public function drawAll(Request $request)
+{
+    $activeDraw = Draw::where('active', true)->first();
+    if (! $activeDraw) {
+        return response()->json(['error' => 'No active draw']);
+    }
 
+    // Get only the CURRENT prize (same logic as getCurrentPrize)
+    $prize = Prize::where('draw_id', $activeDraw->id)
+        ->where('order', '>', 0)
+        ->orderBy('order')
+        ->whereRaw('(quantity - (SELECT COUNT(*) FROM winners WHERE winners.prize_id = prizes.id)) > 0')
+        ->first();
+
+    if (! $prize) {
+        return response()->json(['error' => 'No prizes available for active draw']);
+    }
+
+    // Get all already-drawn codes for this draw
+    $drawnCodes = Winner::whereHas('prize', function ($q) use ($activeDraw) {
+        $q->where('draw_id', $activeDraw->id);
+    })->pluck('code')->toArray();
+
+    $start = $activeDraw->start_code;
+    $end   = $activeDraw->end_code;
+
+    if ($start === null || $end === null || $start > $end) {
+        return response()->json(['error' => 'Invalid code range for the active draw']);
+    }
+
+    $results = [];
+
+    // Draw all remaining slots for the current prize
+    while ($prize->availableQuantity() > 0) {
+        $allCodes       = range((int) $start, (int) $end);
+        $availableCodes = array_values(array_diff($allCodes, $drawnCodes));
+
+        if (empty($availableCodes)) {
+            break; // No more codes in range
+        }
+
+        $randomCode = $availableCodes[array_rand($availableCodes)];
+        $code       = str_pad($randomCode, 4, '0', STR_PAD_LEFT);
+
+        Winner::create([
+            'prize_id' => $prize->id,
+            'code'     => $code,
+            'drawn_at' => now(),
+        ]);
+
+        $drawnCodes[] = $randomCode; // Track in-memory so next iteration sees it
+
+        $prize->refresh(); // Refresh so availableQuantity() is accurate
+
+        $results[] = [
+            'code'      => $code,
+            'prize'     => $prize->name,
+            'remaining' => $prize->availableQuantity(),
+        ];
+    }
+
+    return response()->json($results);
+}
     // Return winners only for the current prize
     public function getWinners()
     {
@@ -139,10 +201,11 @@ class LuckyDrawController extends Controller
         }
 
         $winners = Winner::where('prize_id', $prize->id)
-            ->orderBy('drawn_at', 'desc')
+            ->orderBy('drawn_at', 'asc')
             ->get()
             ->map(function ($w) use ($prize) {
                 return [
+                    'id' => $w->id,
                     'code' => $w->code,
                     'prize_name' => $prize->name,
                     'drawn_at' => (string) $w->drawn_at,
@@ -163,7 +226,7 @@ class LuckyDrawController extends Controller
         $prizes = Prize::where('draw_id', $activeDraw->id)->orderBy('order')->get();
 
         $result = $prizes->map(function ($p) {
-            $w = $p->winners()->orderBy('drawn_at', 'desc')->get()->map(function ($win) {
+            $w = $p->winners()->orderBy('drawn_at', 'asc')->get()->map(function ($win) {
                 return [
                     'code' => $win->code,
                     'drawn_at' => (string) $win->drawn_at,
@@ -369,5 +432,53 @@ class LuckyDrawController extends Controller
             'totalWinners' => Winner::count(),
             'remainingCodes' => 2000 - Winner::count()
         ]);
+    }
+
+    public function showPrize(Prize $prize)
+    {
+        $draws = Draw::orderBy('draw_date', 'desc')->get();
+        return response()->json([
+            'id' => $prize->id,
+            'name' => $prize->name,
+            'description' => $prize->description,
+            'photo_path' => $prize->photo_path,
+            'quantity' => $prize->quantity,
+            'order' => $prize->order,
+            'draw_id' => $prize->draw_id,
+            'winners_count' => $prize->winners()->count(),
+            'draws' => $draws
+        ]);
+    }
+    public function deleteWinner(Winner $winner)
+    {
+        $winner->delete();
+        return response()->json(['success' => true]);
+    }
+
+    public function updatePrize(Request $request, Prize $prize)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'photo' => 'nullable|image|max:2048',
+            'quantity' => 'required|integer|min:1',
+            'order' => 'required|integer|min:1',
+            'draw_id' => 'nullable|exists:draws,id'
+        ]);
+
+        $prize->name = $request->name;
+        $prize->description = $request->description;
+        $prize->quantity = $request->quantity;
+        $prize->order = $request->order;
+        $prize->draw_id = $request->draw_id ?: null;
+
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->store('prizes', 'public');
+            $prize->photo_path = $photoPath;
+        }
+
+        $prize->save();
+
+        return redirect()->back()->with('success', 'Prize updated successfully');
     }
 }

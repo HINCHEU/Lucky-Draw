@@ -749,6 +749,102 @@
                 gap: 12px;
             }
         }
+        /* Confirm Modal */
+.confirm-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+}
+.confirm-box {
+    background: white;
+    border-radius: 20px;
+    padding: 36px 32px 28px;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    animation: popIn .25s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes popIn {
+    from { transform: scale(.85); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+}
+.confirm-icon {
+    font-size: 2.8rem;
+    margin-bottom: 12px;
+}
+.confirm-title {
+    font-family: 'Battambang', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--blue-dark);
+    margin-bottom: 10px;
+}
+.confirm-msg {
+    font-size: .9rem;
+    color: #555;
+    margin-bottom: 26px;
+    line-height: 1.55;
+}
+.confirm-btns {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+.winner-delete-btn {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    background: var(--red);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: .65rem;
+    line-height: 1;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    box-shadow: 0 2px 6px rgba(224,32,32,.4);
+    transition: transform .15s;
+}
+.winner-code-item:hover .winner-delete-btn {
+    display: flex;
+}
+.winner-delete-btn:hover {
+    transform: translateY(-50%) scale(1.15);
+}
+.confirm-btns button {
+    flex: 1;
+    max-width: 160px;
+    padding: 11px 0;
+    border-radius: 50px;
+    font-family: 'Battambang', serif;
+    font-size: .95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .18s;
+    border: none;
+}
+.btn-cancel-confirm {
+    background: #f0f0f0;
+    color: #555;
+}
+.btn-cancel-confirm:hover { background: #e0e0e0; }
+.btn-ok-confirm {
+    background: linear-gradient(135deg, var(--blue-dark), var(--blue-mid));
+    color: white;
+    box-shadow: 0 4px 16px rgba(13,43,107,.35);
+}
+.btn-ok-confirm:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(13,43,107,.45); }
     </style>
 </head>
 
@@ -816,6 +912,10 @@
             <div style="text-align: center; margin-top: 20px;">
                 <button id="drawBtn" class="btn-draw" onclick="addW()">ចាប់រង្វាន់ ✦</button>
             </div>
+            {{-- draw all cuurrent prizes button (for admin/testing) - can be removed or hidden in production --}}
+            <div style="text-align: center; margin-top: 20px;">
+                <button id="drawBtn" class="btn-draw" onclick="addAllW()">ចាប់រង្វាន់ទាំងអស់ ✦</button>
+            </div>
             <!-- reset button intentionally removed -->
 
         </div>
@@ -828,14 +928,36 @@
             </div>
         </div>
     </div>
-
+    <!-- Confirm Modal -->
+<div id="confirmModal" class="confirm-modal" style="display:none;">
+    <div class="confirm-box">
+        <div class="confirm-icon">🎯</div>
+        <div class="confirm-title">ចាប់រង្វាន់ទាំងអស់?</div>
+        <div class="confirm-msg">
+            Are you sure you want to draw all remaining prizes for the current prize?<br>
+            <strong style="color:var(--red);">This cannot be undone.</strong>
+        </div>
+        <div class="confirm-btns">
+            <button class="btn-cancel-confirm" onclick="closeConfirm()">Cancel</button>
+            <button class="btn-ok-confirm" onclick="confirmDrawAll()">Draw All ✦</button>
+        </div>
+    </div>
+</div>
     <!-- DRAW MODAL -->
-    <div id="drawModal" class="draw-modal" style="display: none;">
+    {{-- <div id="drawModal" class="draw-modal" style="display: none;">
         <div class="draw-content">
             <h2>ការចាប់រង្វាន់</h2>
             <div class="draw-code" id="randomCode">0000</div>
         </div>
+    </div> --}}
+    <!-- DRAW MODAL -->
+<div id="drawModal" class="draw-modal" style="display: none;">
+    <div class="draw-content">
+        <h2 id="drawModalTitle">ការចាប់រង្វាន់</h2>
+        <div class="draw-code" id="randomCode">0000</div>
+        <div id="drawModalProgress" style="display:none; font-family:'Battambang',serif; font-size:1rem; color:var(--blue-mid); margin-top:8px;"></div>
     </div>
+</div>
 
     <footer>© 2025 CE&amp;P Corporation — Optimize Your Investment</footer>
 
@@ -907,13 +1029,43 @@
                     // Populate winner codes list (latest first)
                     const codesList = document.getElementById('winnerCodesList');
                     codesList.innerHTML = '';
-                    data.slice(0, 10).forEach((winner, index) => {
+                    // data.forEach((winner, index) => {
+                    //     const item = document.createElement('div');
+                    //     item.className = 'winner-code-item';
+                    //     item.innerHTML = `
+                    //             <div class="winner-code-number">${index + 1}</div>
+                    //             <div class="winner-code-text">🏅 ${winner.code}</div>
+                    //         `;
+                    //     codesList.appendChild(item);
+                    // });
+                    data.forEach((winner, index) => {
                         const item = document.createElement('div');
                         item.className = 'winner-code-item';
+                        item.style.position = 'relative';
                         item.innerHTML = `
-                                <div class="winner-code-number">${index + 1}</div>
-                                <div class="winner-code-text">🏅 ${winner.code}</div>
-                            `;
+                            <div class="winner-code-number">${index + 1}</div>
+                            <div class="winner-code-text">🏅 ${winner.code}</div>
+                            <button class="winner-delete-btn" data-id="${winner.id}" title="Delete">✕</button>
+                        `;
+                        item.querySelector('.winner-delete-btn').addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            const id = this.dataset.id;
+                            fetch(`/api/winners/${id}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                                }
+                            })
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.success) {
+                                    loadWinners();
+                                    loadAllWinners();
+                                    loadCurrentPrize();
+                                    loadStats();
+                                }
+                            });
+                        });
                         codesList.appendChild(item);
                     });
 
@@ -980,7 +1132,113 @@
                     });
             }, 3000);
         }
+        // function addAllW() {
+        //     if (!confirm('Are you sure you want to draw all remaining prizes? This cannot be undone.')) return;
+        //     fetch('/api/draw-all', {
+        //             method: 'POST',
+        //             headers: {
+        //                 'Content-Type': 'application/json',
+        //                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute(
+        //                     'content') || ''
+        //             },
+        //             body: JSON.stringify({})
+        //         })
+        //         .then(response => response.json())
+        //         .then(data => {
+        //             if (data.error) {
+        //                 alert(data.error);
+        //                 return;
+        //             }
+        //             alert('All remaining prizes have been drawn!');
+        //             loadCurrentPrize();
+        //             loadWinners();
+        //             loadAllWinners();
+        //             loadStats();
+        //         })
+        //         .catch(error => {
+        //             console.error('Error drawing all:', error);
+        //         });
+        // }
+       function addAllW() {
+                    document.getElementById('confirmModal').style.display = 'flex';
+                }
 
+                function closeConfirm() {
+                    document.getElementById('confirmModal').style.display = 'none';
+                }
+
+                function confirmDrawAll() {
+                    closeConfirm();
+
+                    if (!currentPrize) {
+                        alert('No active draw or no prize available.');
+                        return;
+                    }
+
+                    fetch('/api/draw-all', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                        },
+                        body: JSON.stringify({})
+                    })
+                    .then(response => response.json())
+                    .then(winners => {
+                        if (!Array.isArray(winners) || winners.error) {
+                            alert(winners.error || 'Draw failed.');
+                            return;
+                        }
+                        if (winners.length === 0) {
+                            alert('No remaining slots to draw.');
+                            return;
+                        }
+
+                        const modal      = document.getElementById('drawModal');
+                        const codeEl     = document.getElementById('randomCode');
+                        const titleEl    = document.getElementById('drawModalTitle');
+                        const progressEl = document.getElementById('drawModalProgress');
+                        const startCode  = parseInt(currentPrize.start_code) || 1;
+                        const endCode    = parseInt(currentPrize.end_code)   || 2000;
+                        const range      = endCode - startCode + 1;
+                        let index = 0;
+
+                        function showNext() {
+                            if (index >= winners.length) {
+                                modal.style.display = 'none';
+                                progressEl.style.display = 'none';
+                                loadCurrentPrize();
+                                loadWinners();
+                                loadAllWinners();
+                                loadStats();
+                                return;
+                            }
+                            const winner = winners[index];
+                            titleEl.textContent = 'ការចាប់រង្វាន់';
+                            progressEl.style.display = 'block';
+                            progressEl.textContent = `${index + 1} / ${winners.length}`;
+                            modal.style.display = 'flex';
+
+                            const spinInterval = setInterval(() => {
+                                const rnd = startCode + Math.floor(Math.random() * range);
+                                codeEl.textContent = String(rnd).padStart(4, '0');
+                            }, 60);
+
+                            setTimeout(() => {
+                                clearInterval(spinInterval);
+                                codeEl.textContent = winner.code;
+                                confetti();
+                                setTimeout(() => { index++; showNext(); }, 1800);
+                            }, 2000);
+                        }
+
+                        showNext();
+                    })
+                    .catch(error => {
+                        console.error('Error drawing all:', error);
+                        alert('An error occurred while drawing.');
+                    });
+                }
         function loadStats() {
             fetch('/api/stats')
                 .then(response => response.json())
