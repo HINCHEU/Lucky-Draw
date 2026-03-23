@@ -32,12 +32,13 @@
                             <th style="padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); font-weight:600;">Prize</th>
                             <th style="padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); font-weight:600;">Draw</th>
                             <th style="padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); font-weight:600;">Drawn At</th>
+                            <th style="padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); font-weight:600;">Winner Name</th>
                             <th style="padding:12px 16px; text-align:center; border-bottom:1px solid var(--border); font-weight:600;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($winners as $winner)
-                            <tr class="winner-row" data-draw-id="{{ $winner->prize->draw_id ?? '' }}" style="border-bottom:1px solid var(--border);">
+                            <tr class="winner-row" data-draw-id="{{ $winner->prize->draw_id ?? '' }}" data-winner-id="{{ $winner->id }}" data-prize-id="{{ $winner->prize_id }}" data-winner-code="{{ $winner->code }}" data-winner-drawn-at="{{ $winner->drawn_at }}" data-winner-name="{{ $winner->winner_name ?: '' }}" style="border-bottom:1px solid var(--border);">
                                 <td style="padding:12px 16px;">
                                     <code style="background:var(--navy3); padding:4px 8px; border-radius:4px; font-family:monospace;">{{ $winner->code }}</code>
                                 </td>
@@ -62,6 +63,11 @@
                                 <td style="padding:12px 16px;">
                                     {{ $winner->drawn_at->format('M j, Y g:i A') }}
                                 </td>
+                                <td style="padding:12px 16px;">
+                                    <span class="winner-name-cell" data-winner-id="{{ $winner->id }}" style="cursor:pointer; color:var(--accent);">
+                                        {{ $winner->winner_name ?: '-' }}
+                                    </span>
+                                </td>
                                 <td style="padding:12px 16px; text-align:center;">
                                     <button type="button" class="btn btn-danger btn-sm"
                                         onclick="openDeleteModal('{{ $winner->id }}', '{{ $winner->code }}', '/api/winners/{{ $winner->id }}', 'winner')">
@@ -71,7 +77,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" style="padding:32px; text-align:center; color:var(--text-dim);">
+                                <td colspan="6" style="padding:32px; text-align:center; color:var(--text-dim);">
                                     No winners yet.
                                 </td>
                             </tr>
@@ -179,12 +185,16 @@
         var _deleteUrl  = '';
         var _deleteType = '';
         var _deleteName = '';
+        var _deleteId   = '';
+        var _undoData   = null;
+        var _undoTimer  = null;
 
         // ── Delete Modal ─────────────────────────────────────────────────────
         function openDeleteModal(id, name, url, type) {
             _deleteUrl  = url;
             _deleteType = type || 'winner';
             _deleteName = name;
+            _deleteId   = id;
 
             document.getElementById('deleteConfirmTitle').innerHTML = _deleteType === 'winner'
                 ? '🏅 Delete Winner?' : '🗑️ Delete Prize?';
@@ -225,12 +235,31 @@
                 fetchOptions = { method: 'POST', body: formData };
             }
 
+            var deletedRow = document.querySelector('.winner-row[data-winner-id="' + _deleteId + '"]');
+            var deletedWinner = null;
+            if (deletedRow) {
+                deletedWinner = {
+                    prize_id: deletedRow.dataset.prizeId,
+                    code: deletedRow.dataset.winnerCode,
+                    drawn_at: deletedRow.dataset.winnerDrawnAt,
+                    winner_name: deletedRow.dataset.winnerName || null,
+                };
+            }
+
             fetch(_deleteUrl, fetchOptions)
                 .then(function(res) {
                     if (!res.ok) throw new Error('Server returned ' + res.status);
                     closeDeleteModal();
-                    showSuccessNotification(_deleteType, _deleteName);
-                    setTimeout(function() { location.reload(); }, 1500);
+
+                    if (deletedRow) {
+                        deletedRow.remove();
+                    }
+
+                    if (deletedWinner) {
+                        showUndoNotification(deletedWinner);
+                    } else {
+                        showSuccessNotification(_deleteType, _deleteName);
+                    }
                 })
                 .catch(function(err) {
                     console.error(err);
@@ -245,6 +274,71 @@
             el.style.cssText = 'position:fixed;top:20px;right:20px;background:#10b981;color:white;padding:16px 24px;border-radius:8px;z-index:3000;font-weight:500;animation:slideInRight .3s cubic-bezier(.34,1.56,.64,1);';
             document.body.appendChild(el);
             setTimeout(function() { el.remove(); }, 1800);
+        }
+
+        function showUndoNotification(deletedWinner) {
+            if (_undoTimer) {
+                clearTimeout(_undoTimer);
+                _undoTimer = null;
+            }
+
+            _undoData = deletedWinner;
+
+            var container = document.createElement('div');
+            container.style.cssText = 'position:fixed;top:20px;right:20px;background:#1e3a8a;color:white;padding:12px 16px;border-radius:8px;z-index:3000;font-weight:500;display:flex;align-items:center;gap:12px;';
+            container.id = 'undoNotification';
+            container.innerHTML = 'Winner deleted. <strong>Undo</strong> in <span id="undoCountdown">10</span>s';
+
+            var undoBtn = document.createElement('button');
+            undoBtn.textContent = 'Undo';
+            undoBtn.style.cssText = 'background:#fff;color:#1e3a8a;border:0;border-radius:6px;padding:6px 10px;cursor:pointer;font-weight:700;';
+            container.appendChild(undoBtn);
+
+            document.body.appendChild(container);
+
+            var countdown = 10;
+            var countdownEl = container.querySelector('#undoCountdown');
+            _undoTimer = setInterval(function() {
+                countdown -= 1;
+                countdownEl.textContent = countdown;
+                if (countdown <= 0) {
+                    clearInterval(_undoTimer);
+                    _undoTimer = null;
+                    _undoData = null;
+                    container.remove();
+                }
+            }, 1000);
+
+            undoBtn.addEventListener('click', function() {
+                if (!_undoData) return;
+
+                fetch('/api/winners/restore', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify(_undoData)
+                })
+                .then(function(res) {
+                    if (!res.ok) throw new Error('Failed to restore');
+                    return res.json();
+                })
+                .then(function() {
+                    if (_undoTimer) {
+                        clearInterval(_undoTimer);
+                        _undoTimer = null;
+                    }
+                    _undoData = null;
+                    container.remove();
+                    showSuccessNotification('winner', 'Restored');
+                    location.reload();
+                })
+                .catch(function(err) {
+                    console.error(err);
+                    alert('Could not undo deletion. Please reload and try again.');
+                });
+            });
         }
 
         // ── Draw Filter ──────────────────────────────────────────────────────
@@ -262,6 +356,69 @@
             if (empty) empty.style.display = (visible === 0 && rows.length > 0) ? 'block' : 'none';
         });
         drawFilter.dispatchEvent(new Event('change'));
+
+        // ── Winner Name Editing ──────────────────────────────────────────────
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('winner-name-cell')) {
+                var cell = e.target;
+                var winnerId = cell.dataset.winnerId;
+                var currentName = cell.textContent.trim() === '-' ? '' : cell.textContent.trim();
+
+                // Replace span with input
+                var input = document.createElement('input');
+                input.type = 'text';
+                input.value = currentName;
+                input.style.cssText = 'width:100%; padding:4px 8px; border:1px solid var(--border); border-radius:4px; background:var(--navy2); color:var(--text);';
+                input.maxLength = 255;
+
+                cell.innerHTML = '';
+                cell.appendChild(input);
+                input.focus();
+                input.select();
+
+                // Function to save
+                function saveName() {
+                    var newName = input.value.trim();
+                    var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                    fetch('/api/winners/' + winnerId, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({ winner_name: newName })
+                    })
+                    .then(function(res) {
+                        if (!res.ok) throw new Error('Failed to update');
+                        return res.json();
+                    })
+                    .then(function(data) {
+                        cell.innerHTML = newName || '-';
+                        showSuccessNotification('winner', 'Name updated');
+                    })
+                    .catch(function(err) {
+                        console.error(err);
+                        alert('Error updating winner name. Please try again.');
+                        cell.innerHTML = currentName || '-';
+                    });
+                }
+
+                // Save on enter or blur
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveName();
+                    } else if (e.key === 'Escape') {
+                        cell.innerHTML = currentName || '-';
+                    }
+                });
+
+                input.addEventListener('blur', function() {
+                    saveName();
+                });
+            }
+        });
     </script>
 
 @endsection

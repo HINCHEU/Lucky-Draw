@@ -750,101 +750,101 @@
             }
         }
         /* Confirm Modal */
-.confirm-modal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.65);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 300;
-}
-.confirm-box {
-    background: white;
-    border-radius: 20px;
-    padding: 36px 32px 28px;
-    max-width: 420px;
-    width: 90%;
-    text-align: center;
-    box-shadow: 0 20px 60px rgba(0,0,0,.25);
-    animation: popIn .25s cubic-bezier(.34,1.56,.64,1);
-}
-@keyframes popIn {
-    from { transform: scale(.85); opacity: 0; }
-    to   { transform: scale(1);   opacity: 1; }
-}
-.confirm-icon {
-    font-size: 2.8rem;
-    margin-bottom: 12px;
-}
-.confirm-title {
-    font-family: 'Battambang', serif;
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: var(--blue-dark);
-    margin-bottom: 10px;
-}
-.confirm-msg {
-    font-size: .9rem;
-    color: #555;
-    margin-bottom: 26px;
-    line-height: 1.55;
-}
-.confirm-btns {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-}
-.winner-delete-btn {
-    position: absolute;
-    top: 50%;
-    right: 8px;
-    transform: translateY(-50%);
-    background: var(--red);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    font-size: .65rem;
-    line-height: 1;
-    cursor: pointer;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    box-shadow: 0 2px 6px rgba(224,32,32,.4);
-    transition: transform .15s;
-}
-.winner-code-item:hover .winner-delete-btn {
-    display: flex;
-}
-.winner-delete-btn:hover {
-    transform: translateY(-50%) scale(1.15);
-}
-.confirm-btns button {
-    flex: 1;
-    max-width: 160px;
-    padding: 11px 0;
-    border-radius: 50px;
-    font-family: 'Battambang', serif;
-    font-size: .95rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all .18s;
-    border: none;
-}
-.btn-cancel-confirm {
-    background: #f0f0f0;
-    color: #555;
-}
-.btn-cancel-confirm:hover { background: #e0e0e0; }
-.btn-ok-confirm {
-    background: linear-gradient(135deg, var(--blue-dark), var(--blue-mid));
-    color: white;
-    box-shadow: 0 4px 16px rgba(13,43,107,.35);
-}
-.btn-ok-confirm:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(13,43,107,.45); }
+    .confirm-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.65);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 300;
+    }
+    .confirm-box {
+        background: white;
+        border-radius: 20px;
+        padding: 36px 32px 28px;
+        max-width: 420px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0,0,0,.25);
+        animation: popIn .25s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes popIn {
+        from { transform: scale(.85); opacity: 0; }
+        to   { transform: scale(1);   opacity: 1; }
+    }
+    .confirm-icon {
+        font-size: 2.8rem;
+        margin-bottom: 12px;
+    }
+    .confirm-title {
+        font-family: 'Battambang', serif;
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--blue-dark);
+        margin-bottom: 10px;
+    }
+    .confirm-msg {
+        font-size: .9rem;
+        color: #555;
+        margin-bottom: 26px;
+        line-height: 1.55;
+    }
+    .confirm-btns {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+    .winner-delete-btn {
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        transform: translateY(-50%);
+        background: var(--red);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: .65rem;
+        line-height: 1;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        box-shadow: 0 2px 6px rgba(224,32,32,.4);
+        transition: transform .15s;
+    }
+    .winner-code-item:hover .winner-delete-btn {
+        display: flex;
+    }
+    .winner-delete-btn:hover {
+        transform: translateY(-50%) scale(1.15);
+    }
+    .confirm-btns button {
+        flex: 1;
+        max-width: 160px;
+        padding: 11px 0;
+        border-radius: 50px;
+        font-family: 'Battambang', serif;
+        font-size: .95rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all .18s;
+        border: none;
+    }
+    .btn-cancel-confirm {
+        background: #f0f0f0;
+        color: #555;
+    }
+    .btn-cancel-confirm:hover { background: #e0e0e0; }
+    .btn-ok-confirm {
+        background: linear-gradient(135deg, var(--blue-dark), var(--blue-mid));
+        color: white;
+        box-shadow: 0 4px 16px rgba(13,43,107,.35);
+    }
+    .btn-ok-confirm:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(13,43,107,.45); }
     </style>
 </head>
 
@@ -956,6 +956,7 @@
         <h2 id="drawModalTitle">ការចាប់រង្វាន់</h2>
         <div class="draw-code" id="randomCode">0000</div>
         <div id="drawModalProgress" style="display:none; font-family:'Battambang',serif; font-size:1rem; color:var(--blue-mid); margin-top:8px;"></div>
+        <button id="stopDrawBtn" style="display:none; margin: 20px auto 0; padding: 10px 20px; background: linear-gradient(135deg, var(--blue-dark), var(--blue-mid)); color: white; border: none; border-radius: 50px; font-family: 'Battambang', serif; font-size: 1rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 16px rgba(13,43,107,.35); transition: all .18s;">ឈប់</button>
     </div>
 </div>
 
@@ -1050,6 +1051,8 @@
                         item.querySelector('.winner-delete-btn').addEventListener('click', function(e) {
                             e.stopPropagation();
                             const id = this.dataset.id;
+                            const winner = data.find(w => Number(w.id) === Number(id));
+
                             fetch(`/api/winners/${id}`, {
                                 method: 'DELETE',
                                 headers: {
@@ -1059,8 +1062,15 @@
                             .then(r => r.json())
                             .then(data => {
                                 if (data.success) {
-                                    loadWinners();
-                                    loadAllWinners();
+                                    item.remove();
+                                    if (winner) {
+                                        showUndoNotification({
+                                            prize_id: currentPrize ? currentPrize.id : null,
+                                            code: winner.code,
+                                            drawn_at: winner.drawn_at,
+                                            winner_name: winner.winner_name || null
+                                        });
+                                    }
                                     loadCurrentPrize();
                                     loadStats();
                                 }
@@ -1075,6 +1085,84 @@
                 .catch(error => console.error('Error loading winners:', error));
         }
 
+        var _undoTimer = null;
+
+        function showUndoNotification(deletedWinner) {
+            if (!deletedWinner) return;
+
+            if (_undoTimer) {
+                clearTimeout(_undoTimer);
+                _undoTimer = null;
+                var existing = document.getElementById('undoNotification');
+                if (existing) existing.remove();
+            }
+
+            var container = document.createElement('div');
+            container.id = 'undoNotification';
+            container.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#1e3a8a;color:white;padding:12px 16px;border-radius:8px;z-index:3000;font-weight:500;display:flex;align-items:center;gap:10px;';
+            container.innerHTML = 'Winner deleted. <strong>Undo</strong> in <span id="undoCountdown">10</span>s';
+
+            var undoBtn = document.createElement('button');
+            undoBtn.textContent = 'Undo';
+            undoBtn.style.cssText = 'background:#fff;color:#1e3a8a;border:0;border-radius:6px;padding:6px 10px;cursor:pointer;font-weight:700;';
+            container.appendChild(undoBtn);
+
+            document.body.appendChild(container);
+
+            var countdown = 10;
+            var countdownEl = container.querySelector('#undoCountdown');
+            _undoTimer = setInterval(function() {
+                countdown -= 1;
+                countdownEl.textContent = countdown;
+                if (countdown <= 0) {
+                    clearInterval(_undoTimer);
+                    _undoTimer = null;
+                    var el = document.getElementById('undoNotification');
+                    if (el) el.remove();
+                }
+            }, 1000);
+
+            undoBtn.addEventListener('click', function() {
+                if (!_undoTimer) return;
+
+                fetch('/api/winners/restore', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    body: JSON.stringify(deletedWinner)
+                })
+                .then(r => {
+                    if (!r.ok) {
+                        return r.text().then(txt => { throw new Error('Restore failed: ' + txt); });
+                    }
+                    var ct = r.headers.get('content-type') || '';
+                    if (ct.indexOf('application/json') !== -1) {
+                        return r.json();
+                    }
+                    return r.text().then(txt => { throw new Error('Restore response not JSON: ' + txt); });
+                })
+                .then(data => {
+                    if (data.success) {
+                        clearInterval(_undoTimer);
+                        _undoTimer = null;
+                        var el = document.getElementById('undoNotification');
+                        if (el) el.remove();
+                        loadWinners();
+                        loadAllWinners();
+                        loadCurrentPrize();
+                        loadStats();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error undoing deletion:', error);
+                    alert('Undo failed, please refresh page.');
+                });
+            });
+        }
+
         function addW() {
             const drawBtn = document.getElementById('drawBtn');
             if (drawBtn && drawBtn.disabled) return;
@@ -1085,7 +1173,9 @@
             // show modal and start randomizing codes
             const modal = document.getElementById('drawModal');
             const codeEl = document.getElementById('randomCode');
+            const stopBtn = document.getElementById('stopDrawBtn');
             modal.style.display = 'flex';
+            stopBtn.style.display = 'block';
 
             const startCode = parseInt(currentPrize.start_code) || 1;
             const endCode = parseInt(currentPrize.end_code) || 2000;
@@ -1096,8 +1186,11 @@
                 codeEl.textContent = String(rnd).padStart(4, '0');
             }, 60);
 
-            setTimeout(() => {
+            // Handle stop button click
+            const stopHandler = () => {
                 clearInterval(drawInterval);
+                stopBtn.style.display = 'none';
+                stopBtn.removeEventListener('click', stopHandler);
 
                 fetch('/api/draw', {
                         method: 'POST',
@@ -1130,7 +1223,9 @@
                         console.error('Error drawing:', error);
                         modal.style.display = 'none';
                     });
-            }, 3000);
+            };
+
+            stopBtn.addEventListener('click', stopHandler);
         }
         // function addAllW() {
         //     if (!confirm('Are you sure you want to draw all remaining prizes? This cannot be undone.')) return;
@@ -1198,6 +1293,7 @@
                         const codeEl     = document.getElementById('randomCode');
                         const titleEl    = document.getElementById('drawModalTitle');
                         const progressEl = document.getElementById('drawModalProgress');
+                        const stopBtn    = document.getElementById('stopDrawBtn');
                         const startCode  = parseInt(currentPrize.start_code) || 1;
                         const endCode    = parseInt(currentPrize.end_code)   || 2000;
                         const range      = endCode - startCode + 1;
@@ -1207,6 +1303,7 @@
                             if (index >= winners.length) {
                                 modal.style.display = 'none';
                                 progressEl.style.display = 'none';
+                                stopBtn.style.display = 'none';
                                 loadCurrentPrize();
                                 loadWinners();
                                 loadAllWinners();
@@ -1218,18 +1315,24 @@
                             progressEl.style.display = 'block';
                             progressEl.textContent = `${index + 1} / ${winners.length}`;
                             modal.style.display = 'flex';
+                            stopBtn.style.display = 'block';
 
                             const spinInterval = setInterval(() => {
                                 const rnd = startCode + Math.floor(Math.random() * range);
                                 codeEl.textContent = String(rnd).padStart(4, '0');
                             }, 60);
 
-                            setTimeout(() => {
+                            // Handle stop button click
+                            const stopHandler = () => {
                                 clearInterval(spinInterval);
+                                stopBtn.style.display = 'none';
+                                stopBtn.removeEventListener('click', stopHandler);
                                 codeEl.textContent = winner.code;
                                 confetti();
                                 setTimeout(() => { index++; showNext(); }, 1800);
-                            }, 2000);
+                            };
+
+                            stopBtn.addEventListener('click', stopHandler);
                         }
 
                         showNext();
@@ -1237,6 +1340,8 @@
                     .catch(error => {
                         console.error('Error drawing all:', error);
                         alert('An error occurred while drawing.');
+                        modal.style.display = 'none';
+                        stopBtn.style.display = 'none';
                     });
                 }
         function loadStats() {
@@ -1334,19 +1439,19 @@
                         const table = document.createElement('table');
                         table.className = 'prize-winners-table';
                         const thead = document.createElement('thead');
-                        thead.innerHTML = '<tr><th>#</th><th>Code</th><th>Drawn At</th></tr>';
+                        thead.innerHTML = '<tr><th>#</th><th>Code</th><th>Winner Name</th><th>Drawn At</th></tr>';
                         table.appendChild(thead);
 
                         const tbody = document.createElement('tbody');
                         if (!prize.winners || prize.winners.length === 0) {
                             const tr = document.createElement('tr');
-                            tr.innerHTML = '<td colspan="3">No winners yet</td>';
+                            tr.innerHTML = '<td colspan="4">No winners yet</td>';
                             tbody.appendChild(tr);
                         } else {
                             prize.winners.forEach((w, idx) => {
                                 const tr = document.createElement('tr');
                                 tr.innerHTML =
-                                    `<td>${idx + 1}</td><td>${String(w.code).padStart(4,'0')}</td><td>${new Date(w.drawn_at).toLocaleString()}</td>`;
+                                    `<td>${idx + 1}</td><td>${String(w.code).padStart(4,'0')}</td><td><span class="winner-name-cell-public" data-winner-id="${w.id}" style="cursor:pointer; color:var(--blue-mid);">${w.winner_name || '-'}</span></td><td>${new Date(w.drawn_at).toLocaleString()}</td>`;
                                 tbody.appendChild(tr);
                             });
                         }
@@ -1385,6 +1490,74 @@
             loadWinners();
             loadAllWinners();
             loadStats();
+        });
+
+        // ── Winner Name Editing on Public Page ──────────────────────────────────
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('winner-name-cell-public')) {
+                var cell = e.target;
+                var winnerId = cell.dataset.winnerId;
+                var currentName = cell.textContent.trim() === '-' ? '' : cell.textContent.trim();
+
+                // Replace span with input
+                var input = document.createElement('input');
+                input.type = 'text';
+                input.value = currentName;
+                input.style.cssText = 'width:100%; padding:4px 8px; border:1px solid var(--blue-mid); border-radius:4px; background:var(--sky); color:var(--blue-dark); font-size:0.9rem;';
+                input.maxLength = 255;
+
+                cell.innerHTML = '';
+                cell.appendChild(input);
+                input.focus();
+                input.select();
+
+                // Function to save
+                function saveName() {
+                    var newName = input.value.trim();
+                    var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                    fetch('/api/winners/' + winnerId, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({ winner_name: newName })
+                    })
+                    .then(function(res) {
+                        if (!res.ok) throw new Error('Failed to update');
+                        return res.json();
+                    })
+                    .then(function(data) {
+                        cell.innerHTML = newName || '-';
+                        // Optional: show a brief success message
+                        var msg = document.createElement('div');
+                        msg.textContent = '✓ Name updated';
+                        msg.style.cssText = 'position:fixed;top:20px;right:20px;background:#10b981;color:white;padding:8px 16px;border-radius:8px;z-index:3000;font-size:0.9rem;';
+                        document.body.appendChild(msg);
+                        setTimeout(function() { msg.remove(); }, 2000);
+                    })
+                    .catch(function(err) {
+                        console.error(err);
+                        alert('Error updating winner name. Please try again.');
+                        cell.innerHTML = currentName || '-';
+                    });
+                }
+
+                // Save on enter or blur
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveName();
+                    } else if (e.key === 'Escape') {
+                        cell.innerHTML = currentName || '-';
+                    }
+                });
+
+                input.addEventListener('blur', function() {
+                    saveName();
+                });
+            }
         });
 
         /* confetti */

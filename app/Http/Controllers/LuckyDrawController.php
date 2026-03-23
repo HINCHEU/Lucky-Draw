@@ -207,6 +207,7 @@ class LuckyDrawController extends Controller
                 return [
                     'id' => $w->id,
                     'code' => $w->code,
+                    'winner_name' => $w->winner_name,
                     'prize_name' => $prize->name,
                     'drawn_at' => (string) $w->drawn_at,
                 ];
@@ -228,7 +229,9 @@ class LuckyDrawController extends Controller
         $result = $prizes->map(function ($p) {
             $w = $p->winners()->orderBy('drawn_at', 'asc')->get()->map(function ($win) {
                 return [
+                    'id' => $win->id,
                     'code' => $win->code,
+                    'winner_name' => $win->winner_name,
                     'drawn_at' => (string) $win->drawn_at,
                 ];
             });
@@ -460,10 +463,40 @@ class LuckyDrawController extends Controller
             'draws' => $draws
         ]);
     }
+    public function updateWinner(Request $request, Winner $winner)
+    {
+        $request->validate([
+            'winner_name' => 'nullable|string|max:255'
+        ]);
+
+        $winner->update(['winner_name' => $request->winner_name]);
+
+        return response()->json(['success' => true]);
+    }
+
     public function deleteWinner(Winner $winner)
     {
         $winner->delete();
         return response()->json(['success' => true]);
+    }
+
+    public function restoreWinner(Request $request)
+    {
+        $request->validate([
+            'prize_id' => 'required|exists:prizes,id',
+            'code' => 'required|string|max:20',
+            'drawn_at' => 'required|date',
+            'winner_name' => 'nullable|string|max:255',
+        ]);
+
+        $winner = Winner::create([
+            'prize_id' => $request->prize_id,
+            'code' => $request->code,
+            'drawn_at' => $request->drawn_at,
+            'winner_name' => $request->winner_name,
+        ]);
+
+        return response()->json(['success' => true, 'winner' => $winner]);
     }
 
     public function updatePrize(Request $request, Prize $prize)
