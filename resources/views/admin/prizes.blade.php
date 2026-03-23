@@ -7,9 +7,12 @@
 
         {{-- All Prizes --}}
         <div class="gc">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; gap:12px;">
                 <div class="stitle" style="margin-bottom:0;">🏷️ All Prizes</div>
-                <button onclick="openAddModal()" class="btn btn-success">＋ Add New Prize</button>
+                <div style="display:flex; gap:8px;">
+                    <button onclick="openImportModal()" class="btn btn-primary">📄 Import From Excel</button>
+                    <button onclick="openAddModal()" class="btn btn-success">＋ Add New Prize</button>
+                </div>
             </div>
 
             {{-- Draw Filter --}}
@@ -268,12 +271,51 @@
             <div id="deleteConfirmTitle" style="font-size:1.5rem; font-weight:600; margin-bottom:12px; color:var(--danger, #ff4757);"></div>
             <div id="deleteConfirmMessage" style="color:var(--text-dim); margin-bottom:28px; line-height:1.6;"></div>
             <div style="display:flex; gap:12px; justify-content:flex-end;">
-                <button id="deleteConfirmCancel" type="button" class="btn" style="background:var(--navy3); border:1px solid var(--border); min-width:100px;">
-                    Cancel
-                </button>
-                <button id="deleteConfirmBtn" type="button" class="btn btn-danger" style="min-width:100px;">
-                    🗑 Delete
-                </button>
+                <button id="deleteConfirmCancel" type="button" class="btn" style="background:var(--navy3); border:1px solid var(--border); min-width:100px;">Cancel</button>
+                <button id="deleteConfirmBtn" type="button" class="btn btn-danger" style="min-width:100px;">🗑 Delete</button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ── Import Excel Modal ── --}}
+    <div id="importPrizeModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:var(--navy); border-radius:12px; padding:24px; max-width:600px; width:90%; max-height:90vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,0.3); animation:modalPop .25s cubic-bezier(.34,1.56,.64,1);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0; font-size:1.5rem;">📥 Import Prizes from Excel</h2>
+                <button onclick="closeImportModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text); padding:0; width:30px; height:30px; display:flex; align-items:center; justify-content:center;">×</button>
+            </div>
+
+            <div style="margin-bottom:16px; padding:12px 16px; background:rgba(74,144,226,.08); border:1px solid rgba(74,144,226,.2); border-radius:8px; font-size:.875rem; color:var(--text-dim); line-height:1.6;">
+                Required columns: <strong>name</strong>, <strong>quantity</strong>, <strong>order</strong><br>
+                Optional columns: <strong>description</strong>, <strong>draw_id</strong><br>
+                Row 1 must be the header row. All subsequent rows are imported.
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <label for="importFile" style="display:block; margin-bottom:8px; font-weight:600;">Upload Excel or CSV file (.xlsx, .xls, .csv)</label>
+                <input id="importFile" type="file" accept=".csv,.xlsx,.xls" style="width:100%;" />
+            </div>
+
+            <div id="importPreview" style="display:none; margin-bottom:16px; max-height:300px; overflow:auto;">
+                <div id="importRowCount" style="font-size:.85rem; color:var(--text-dim); margin-bottom:8px;"></div>
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr>
+                            <th style="border:1px solid var(--border); padding:8px; text-align:left;">#</th>
+                            <th style="border:1px solid var(--border); padding:8px; text-align:left;">Name</th>
+                            <th style="border:1px solid var(--border); padding:8px; text-align:left;">Description</th>
+                            <th style="border:1px solid var(--border); padding:8px; text-align:left;">Quantity</th>
+                            <th style="border:1px solid var(--border); padding:8px; text-align:left;">Order</th>
+                            <th style="border:1px solid var(--border); padding:8px; text-align:left;">Draw ID</th>
+                        </tr>
+                    </thead>
+                    <tbody id="importPreviewBody"></tbody>
+                </table>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" class="btn" style="background:var(--navy3);" onclick="closeImportModal()">Cancel</button>
+                <button id="importSubmitBtn" type="button" class="btn btn-success" disabled>Import</button>
             </div>
         </div>
     </div>
@@ -297,7 +339,10 @@
         }
     </style>
 
-    {{-- ALL modals are above — script runs after, so getElementById always finds elements --}}
+    {{-- SheetJS from CDN --}}
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    {{-- ALL modals above — script runs last, getElementById always finds elements --}}
     <script>
         var _deleteUrl  = '';
         var _deleteType = '';
@@ -308,9 +353,7 @@
             _deleteUrl  = url;
             _deleteType = type || 'prize';
             _deleteName = name;
-
-            document.getElementById('deleteConfirmTitle').innerHTML = _deleteType === 'winner'
-                ? '🏅 Delete Winner?' : '🗑️ Delete Prize?';
+            document.getElementById('deleteConfirmTitle').innerHTML   = _deleteType === 'winner' ? '🏅 Delete Winner?' : '🗑️ Delete Prize?';
             document.getElementById('deleteConfirmMessage').innerHTML = _deleteType === 'winner'
                 ? 'Are you sure you want to delete winner <strong>' + name + '</strong>? This cannot be undone.'
                 : 'Are you sure you want to delete prize <strong>' + name + '</strong>? This cannot be undone.';
@@ -322,40 +365,28 @@
         }
 
         document.getElementById('deleteConfirmCancel').addEventListener('click', closeDeleteModal);
-        document.getElementById('deleteConfirmModal').addEventListener('click', function(e) {
-            if (e.target === this) closeDeleteModal();
-        });
+        document.getElementById('deleteConfirmModal').addEventListener('click', function(e) { if (e.target === this) closeDeleteModal(); });
 
         document.getElementById('deleteConfirmBtn').addEventListener('click', function() {
             var csrfToken = document.querySelector('meta[name="csrf-token"]')
                 ? document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 : document.querySelector('input[name="_token"]').value;
 
-            // Prizes use POST + _method=DELETE (web route); winners use real DELETE (api route)
             var fetchOptions;
             if (_deleteType === 'winner') {
-                fetchOptions = {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json'
-                    }
-                };
+                fetchOptions = { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' } };
             } else {
-                var formData = new FormData();
-                formData.append('_token', csrfToken);
-                formData.append('_method', 'DELETE');
-                fetchOptions = {
-                    method: 'POST',
-                    body: formData
-                };
+                var fd = new FormData();
+                fd.append('_token', csrfToken);
+                fd.append('_method', 'DELETE');
+                fetchOptions = { method: 'POST', body: fd };
             }
 
             fetch(_deleteUrl, fetchOptions)
                 .then(function(res) {
                     if (!res.ok) throw new Error('Server returned ' + res.status);
                     closeDeleteModal();
-                    showSuccessNotification(_deleteType, _deleteName);
+                    showSuccessNotification(_deleteType === 'winner' ? 'Winner deleted!' : 'Prize deleted!');
                     setTimeout(function() { location.reload(); }, 1500);
                 })
                 .catch(function(err) {
@@ -363,15 +394,6 @@
                     alert('Error deleting ' + _deleteType + '. Please try again.');
                 });
         });
-
-        function showSuccessNotification(type, name) {
-            var msg = type === 'winner' ? '✓ Winner deleted!' : '✓ Prize deleted!';
-            var el  = document.createElement('div');
-            el.textContent = msg;
-            el.style.cssText = 'position:fixed;top:20px;right:20px;background:#10b981;color:white;padding:16px 24px;border-radius:8px;z-index:3000;font-weight:500;animation:slideInRight .3s cubic-bezier(.34,1.56,.64,1);';
-            document.body.appendChild(el);
-            setTimeout(function() { el.remove(); }, 1800);
-        }
 
         // ── Add Modal ────────────────────────────────────────────────────────
         function openAddModal() {
@@ -381,15 +403,14 @@
         function closeAddModal() {
             document.getElementById('addPrizeModal').style.display = 'none';
             document.getElementById('addPrizeForm').reset();
+            document.getElementById('addFormErrors').style.display = 'none';
             var prev = document.getElementById('addPhotoPreview');
             var icon = document.getElementById('addPreviewIcon');
             if (prev) { prev.style.display = 'none'; prev.src = ''; }
             if (icon)   icon.style.display = '';
         }
 
-        document.getElementById('addPrizeModal').addEventListener('click', function(e) {
-            if (e.target === this) closeAddModal();
-        });
+        document.getElementById('addPrizeModal').addEventListener('click', function(e) { if (e.target === this) closeAddModal(); });
 
         document.getElementById('addPhoto').addEventListener('change', function() {
             var prev = document.getElementById('addPhotoPreview');
@@ -401,16 +422,26 @@
             r.readAsDataURL(file);
         });
 
+        document.getElementById('addPrizeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            fetch(this.action, { method: 'POST', body: new FormData(this), headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function(res) { return res.json().then(function(d) { if (!res.ok) throw d; return d; }); })
+                .then(function() { closeAddModal(); showSuccessNotification('Prize added successfully!'); setTimeout(function() { location.reload(); }, 1500); })
+                .catch(function(err) {
+                    if (err.errors) { showFormErrors('add', err.errors); }
+                    else { alert('Error adding prize: ' + (err.message || 'Unknown error')); }
+                });
+        });
+
         // ── Edit Modal ───────────────────────────────────────────────────────
         function closeEditModal() {
             document.getElementById('editPrizeModal').style.display = 'none';
             document.getElementById('editPrizeForm').reset();
+            document.getElementById('editFormErrors').style.display = 'none';
         }
 
         document.getElementById('closeEditModal').addEventListener('click', closeEditModal);
-        document.getElementById('editPrizeModal').addEventListener('click', function(e) {
-            if (e.target === this) closeEditModal();
-        });
+        document.getElementById('editPrizeModal').addEventListener('click', function(e) { if (e.target === this) closeEditModal(); });
 
         document.getElementById('photoEdit').addEventListener('change', function() {
             var prev = document.getElementById('photoEditPreview');
@@ -460,6 +491,17 @@
                 .catch(function() { alert('Error loading prize data'); });
         }
 
+        document.getElementById('editPrizeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            fetch(this.action, { method: 'POST', body: new FormData(this), headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function(res) { return res.json().then(function(d) { if (!res.ok) throw d; return d; }); })
+                .then(function() { closeEditModal(); showSuccessNotification('Prize updated successfully!'); setTimeout(function() { location.reload(); }, 1500); })
+                .catch(function(err) {
+                    if (err.errors) { showFormErrors('edit', err.errors); }
+                    else { alert('Error updating prize: ' + (err.message || 'Unknown error')); }
+                });
+        });
+
         document.querySelectorAll('.prize-card').forEach(function(card) {
             card.addEventListener('click', function() { openEditModal(this.dataset.prizeId); });
         });
@@ -480,137 +522,196 @@
         });
         drawFilter.dispatchEvent(new Event('change'));
 
-        // ── Add Prize Form AJAX ──────────────────────────────────────────────
-        var addForm = document.getElementById('addPrizeForm');
-        if (addForm) {
-            addForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                var formData = new FormData(this);
-                var url = this.action;
-
-                fetch(url, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(function(response) {
-                    return response.json().then(function(data) {
-                        if (!response.ok) {
-                            throw data;
-                        }
-                        return data;
-                    });
-                })
-                .then(function(data) {
-                    // Success - close modal and show success message
-                    closeAddModal();
-                    showSuccessNotification('Prize added successfully!');
-                    setTimeout(function() {
-                        location.reload();
-                    }, 2000);
-                })
-                .catch(function(error) {
-                    // Show validation errors
-                    if (error.errors) {
-                        showFormErrors('add', error.errors);
-                    } else {
-                        alert('Error adding prize: ' + (error.message || 'Unknown error'));
-                    }
-                });
-            });
-        }
-
-        // ── Edit Prize Form AJAX ─────────────────────────────────────────────
-        var editForm = document.getElementById('editPrizeForm');
-        if (editForm) {
-            editForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                var formData = new FormData(this);
-                var url = this.action;
-
-                fetch(url, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(function(response) {
-                    return response.json().then(function(data) {
-                        if (!response.ok) {
-                            throw data;
-                        }
-                        return data;
-                    });
-                })
-                .then(function(data) {
-                    // Success - close modal and show success message
-                    closeEditModal();
-                    showSuccessNotification('Prize updated successfully!');
-                    setTimeout(function() {
-                        location.reload();
-                    }, 2000);
-                })
-                .catch(function(error) {
-                    // Show validation errors
-                    if (error.errors) {
-                        showFormErrors('edit', error.errors);
-                    } else {
-                        alert('Error updating prize: ' + (error.message || 'Unknown error'));
-                    }
-                });
-            });
-        }
-
+        // ── Shared helpers ───────────────────────────────────────────────────
         function showFormErrors(formType, errors) {
-            var errorDiv = document.getElementById(formType + 'FormErrors');
+            var errorDiv  = document.getElementById(formType + 'FormErrors');
             var errorList = document.getElementById(formType + 'ErrorList');
-
             errorList.innerHTML = '';
             for (var field in errors) {
                 if (errors.hasOwnProperty(field)) {
-                    errors[field].forEach(function(error) {
+                    errors[field].forEach(function(msg) {
                         var li = document.createElement('li');
-                        li.textContent = error;
+                        li.textContent = msg;
                         errorList.appendChild(li);
                     });
                 }
             }
-
             errorDiv.style.display = 'block';
             errorDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         function showSuccessNotification(message) {
-            var notification = document.createElement('div');
-            notification.className = 'success-notification';
-            notification.innerHTML = '✓ ' + message;
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: linear-gradient(135deg, #10b981, #059669);
-                color: white;
-                padding: 16px 24px;
-                border-radius: 8px;
-                box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
-                z-index: 3000;
-                font-weight: 500;
-                animation: slideInRight .3s cubic-bezier(.34,1.56,.64,1);
-            `;
-            document.body.appendChild(notification);
-
+            var el = document.createElement('div');
+            el.textContent = '✓ ' + message;
+            el.style.cssText = 'position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#10b981,#059669);color:white;padding:16px 24px;border-radius:8px;box-shadow:0 10px 30px rgba(16,185,129,.3);z-index:3000;font-weight:500;animation:slideInRight .3s cubic-bezier(.34,1.56,.64,1);';
+            document.body.appendChild(el);
             setTimeout(function() {
-                notification.style.animation = 'slideOutRight .3s cubic-bezier(.34,1.56,.64,1)';
-                setTimeout(function() {
-                    notification.remove();
-                }, 300);
+                el.style.animation = 'slideOutRight .3s cubic-bezier(.34,1.56,.64,1)';
+                setTimeout(function() { el.remove(); }, 300);
             }, 2000);
         }
+
+        // ── Import Modal ─────────────────────────────────────────────────────
+        var _importRows = [];
+
+        function openImportModal() {
+            document.getElementById('importPrizeModal').style.display = 'flex';
+            document.getElementById('importFile').value = '';
+            document.getElementById('importPreview').style.display = 'none';
+            document.getElementById('importPreviewBody').innerHTML = '';
+            document.getElementById('importSubmitBtn').disabled = true;
+            _importRows = [];
+        }
+
+        function closeImportModal() {
+            document.getElementById('importPrizeModal').style.display = 'none';
+        }
+
+        document.getElementById('importPrizeModal').addEventListener('click', function(e) { if (e.target === this) closeImportModal(); });
+
+        function parseFile(file) {
+            return new Promise(function(resolve, reject) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        var data     = new Uint8Array(e.target.result);
+                        var workbook = XLSX.read(data, { type: 'array' });
+                        var sheet    = workbook.Sheets[workbook.SheetNames[0]];
+                        var json     = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+                        if (json.length <= 1) {
+                            reject('File is empty or has no data rows.');
+                            return;
+                        }
+
+                        // Normalise headers: lowercase + trim
+                        var headers = json[0].map(function(h) {
+                            return String(h === null || h === undefined ? '' : h).toLowerCase().trim();
+                        });
+
+                        // Map every data row — safely handle missing/undefined cells
+                        var rows = json.slice(1)
+                            .filter(function(row) {
+                                // Drop fully empty rows
+                                return row.some(function(cell) {
+                                    return cell !== undefined && cell !== null && String(cell).trim() !== '';
+                                });
+                            })
+                            .map(function(row) {
+                                var obj = {};
+                                headers.forEach(function(header, i) {
+                                    var cell = row[i];
+                                    // undefined / null → empty string; numbers → string; strings → trim
+                                    obj[header] = (cell === undefined || cell === null) ? '' : String(cell).trim();
+                                });
+                                return obj;
+                            });
+
+                        if (rows.length === 0) {
+                            reject('File contains no valid data rows.');
+                            return;
+                        }
+
+                        resolve(rows);
+                    } catch (err) {
+                        reject('Error parsing file: ' + err.message);
+                    }
+                };
+                reader.onerror = function() { reject('Error reading file.'); };
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        document.getElementById('importFile').addEventListener('change', function() {
+            var file = this.files[0];
+            if (!file) return;
+
+            var name = file.name.toLowerCase();
+            if (!['.csv', '.xlsx', '.xls'].some(function(ext) { return name.endsWith(ext); })) {
+                alert('Please upload a CSV or Excel file (.csv, .xlsx, .xls).');
+                this.value = '';
+                return;
+            }
+
+            parseFile(file)
+                .then(function(rows) {
+                    _importRows = rows;
+
+                    var body = document.getElementById('importPreviewBody');
+                    body.innerHTML = '';
+                    rows.forEach(function(r, idx) {
+                        var tr = document.createElement('tr');
+                        tr.innerHTML =
+                            '<td style="border:1px solid var(--border);padding:8px;">' + (idx + 1) + '</td>' +
+                            '<td style="border:1px solid var(--border);padding:8px;">' + (r.name        || '') + '</td>' +
+                            '<td style="border:1px solid var(--border);padding:8px;">' + (r.description || '') + '</td>' +
+                            '<td style="border:1px solid var(--border);padding:8px;">' + (r.quantity    || '') + '</td>' +
+                            '<td style="border:1px solid var(--border);padding:8px;">' + (r.order       || '') + '</td>' +
+                            '<td style="border:1px solid var(--border);padding:8px;">' + (r.draw_id     || '') + '</td>';
+                        body.appendChild(tr);
+                    });
+
+                    document.getElementById('importRowCount').textContent = rows.length + ' row(s) ready to import.';
+                    document.getElementById('importPreview').style.display = 'block';
+                    document.getElementById('importSubmitBtn').disabled = false;
+                })
+                .catch(function(err) {
+                    alert('Error processing file: ' + err);
+                    document.getElementById('importPreview').style.display = 'none';
+                    document.getElementById('importSubmitBtn').disabled = true;
+                    _importRows = [];
+                });
+        });
+
+        document.getElementById('importSubmitBtn').addEventListener('click', function() {
+            if (!_importRows.length) return;
+
+            var csrfToken = document.querySelector('meta[name="csrf-token"]')
+                ? document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                : document.querySelector('input[name="_token"]').value;
+
+            this.disabled = true;
+            this.textContent = 'Importing…';
+
+            fetch('/admin/prizes/import', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({ prizes: _importRows })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (!data.success) {
+                    alert('Import failed: ' + (data.message || 'Unknown error'));
+                    document.getElementById('importSubmitBtn').disabled = false;
+                    document.getElementById('importSubmitBtn').textContent = 'Import';
+                    return;
+                }
+
+                var msg = data.created + ' prize(s) imported successfully!';
+                if (data.errors && data.errors.length > 0) {
+                    msg += '\n\n' + data.errors.length + ' row(s) skipped:\n';
+                    data.errors.forEach(function(e) {
+                        msg += '  Row ' + e.row + ': ' + e.errors.join(', ') + '\n';
+                    });
+                }
+
+                closeImportModal();
+                showSuccessNotification(data.created + ' prize(s) imported!');
+                if (data.errors && data.errors.length > 0) {
+                    setTimeout(function() { alert(msg); }, 400);
+                }
+                setTimeout(function() { location.reload(); }, 1500);
+            })
+            .catch(function(err) {
+                console.error('Import error', err);
+                alert('Import failed. Please try again.');
+                document.getElementById('importSubmitBtn').disabled = false;
+                document.getElementById('importSubmitBtn').textContent = 'Import';
+            });
+        });
     </script>
 
 @endsection
