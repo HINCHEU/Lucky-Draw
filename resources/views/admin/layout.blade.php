@@ -433,6 +433,9 @@
         <a href="/admin/prizes" class="{{ request()->is('admin/prizes*') ? 'active' : '' }}">
             <span>🎁</span><span class="nav-label">Prizes</span>
         </a>
+        <a href="/admin/winners" class="{{ request()->is('admin/winners*') ? 'active' : '' }}">
+            <span>🏅</span><span class="nav-label">Winners</span>
+        </a>
         <div class="nav-spacer"></div>
         <a href="/" class="btn-back">← Back to Draw</a>
     </nav>

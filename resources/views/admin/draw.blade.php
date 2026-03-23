@@ -107,6 +107,8 @@
                             <div class="prize-meta">
                                 Qty: <strong>{{ $prize->quantity }}</strong>
                                 &nbsp;·&nbsp; Winners: <strong>{{ $prize->winners()->count() }}</strong>
+                                &nbsp;·&nbsp; Order: <strong>{{ $prize->order }}</strong>
+                                {{-- &nbsp;·&nbsp; Draws: <strong>{{ $prize-> }}</strong> --}}
                             </div>
                             <form action="/admin/prizes/{{ $prize->id }}" method="POST"
                                 onsubmit="return confirm('Delete this prize?')">

@@ -27,4 +27,6 @@ Route::get('/admin/prizes/{prize}', [LuckyDrawController::class, 'showPrize']);
 Route::put('/admin/prizes/{prize}', [LuckyDrawController::class, 'updatePrize']);
 Route::delete('/admin/prizes/{prize}', [LuckyDrawController::class, 'deletePrize']);
 
+Route::get('/admin/winners', [LuckyDrawController::class, 'winnersIndex']);
+
 Route::delete('/api/winners/{winner}', [LuckyDrawController::class, 'deleteWinner']);
