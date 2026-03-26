@@ -1163,66 +1163,94 @@
             });
         }
 
-        function addW() {
+       function addW() {
             const drawBtn = document.getElementById('drawBtn');
             if (drawBtn && drawBtn.disabled) return;
             if (!currentPrize) {
                 alert('No active draw or no prize available. Please ask admin to activate a draw.');
                 return;
             }
-            // show modal and start randomizing codes
-            const modal = document.getElementById('drawModal');
-            const codeEl = document.getElementById('randomCode');
+
+            const modal   = document.getElementById('drawModal');
+            const codeEl  = document.getElementById('randomCode');
             const stopBtn = document.getElementById('stopDrawBtn');
+
             modal.style.display = 'flex';
             stopBtn.style.display = 'block';
 
             const startCode = parseInt(currentPrize.start_code) || 1;
-            const endCode = parseInt(currentPrize.end_code) || 2000;
-            const range = endCode - startCode + 1;
+            const endCode   = parseInt(currentPrize.end_code)   || 2000;
+            const range     = endCode - startCode + 1;
 
+            // Start spinning immediately
             drawInterval = setInterval(() => {
                 const rnd = startCode + Math.floor(Math.random() * range);
                 codeEl.textContent = String(rnd).padStart(4, '0');
             }, 60);
 
-            // Handle stop button click
-            const stopHandler = () => {
+            // Fire the API request immediately in parallel — don't wait for stop click
+            const apiPromise = fetch('/api/draw', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                body: JSON.stringify({})
+            }).then(r => r.json());
+
+            let apiResult   = null;  // stores result once API returns
+            let userStopped = false; // tracks whether user already clicked stop
+
+            // When API responds, store result — if user already stopped, show it immediately
+            apiPromise.then(data => {
+                apiResult = data;
+                if (userStopped) {
+                    revealResult(data);
+                }
+            }).catch(error => {
+                console.error('Error drawing:', error);
+                apiResult = { error: 'Network error. Please try again.' };
+                if (userStopped) {
+                    clearInterval(drawInterval);
+                    stopBtn.style.display = 'none';
+                    modal.style.display = 'none';
+                }
+            });
+
+        function revealResult(data) {
                 clearInterval(drawInterval);
                 stopBtn.style.display = 'none';
-                stopBtn.removeEventListener('click', stopHandler);
 
-                fetch('/api/draw', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute(
-                                'content') || ''
-                        },
-                        body: JSON.stringify({})
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.error) {
-                            alert(data.error);
-                            modal.style.display = 'none';
-                            return;
-                        }
-                        codeEl.textContent = data.code;
-                        confetti();
-                        // Hide modal after a bit and refresh UI
-                        setTimeout(() => {
-                            modal.style.display = 'none';
-                            loadCurrentPrize();
-                            loadWinners();
-                            loadAllWinners();
-                            loadStats();
-                        }, 2000);
-                    })
-                    .catch(error => {
-                        console.error('Error drawing:', error);
-                        modal.style.display = 'none';
-                    });
+                if (data.error) {
+                    alert(data.error);
+                    modal.style.display = 'none';
+                    return;
+                }
+
+                codeEl.textContent = data.code;
+                confetti();
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    loadCurrentPrize();
+                    loadWinners();
+                    loadAllWinners();
+                    loadStats();
+                }, 2000);
+            }
+
+            const stopHandler = () => {
+                stopBtn.removeEventListener('click', stopHandler);
+                userStopped = true;
+
+                if (apiResult !== null) {
+                    // API already returned — reveal instantly
+                    revealResult(apiResult);
+                } else {
+                    // API still pending — keep spinning, show a subtle waiting indicator
+                    codeEl.style.opacity = '0.6';
+                    // Will reveal as soon as apiPromise resolves (handled above)
+                    apiPromise.finally(() => { codeEl.style.opacity = '1'; });
+                }
             };
 
             stopBtn.addEventListener('click', stopHandler);
@@ -1254,7 +1282,8 @@
         //             console.error('Error drawing all:', error);
         //         });
         // }
-       function addAllW() {
+       
+        function addAllW() {
                     document.getElementById('confirmModal').style.display = 'flex';
                 }
 

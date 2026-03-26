@@ -183,8 +183,8 @@
                         <option value="">(no draw)</option>
                         @foreach ($draws as $drawOption)
                             <option value="{{ $drawOption->id }}" @if($drawOption->active) selected @endif>
-                                {{ $drawOption->name }}
-                                @if ($drawOption->draw_date) — {{ $drawOption->draw_date }} @endif
+                                #{{ $drawOption->id }} — {{ $drawOption->name }}
+                                @if ($drawOption->draw_date) ({{ $drawOption->draw_date }}) @endif
                                 @if ($drawOption->active) ⚡ @endif
                             </option>
                         @endforeach
@@ -279,28 +279,49 @@
 
     {{-- ── Import Excel Modal ── --}}
     <div id="importPrizeModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
-        <div style="background:var(--navy); border-radius:12px; padding:24px; max-width:600px; width:90%; max-height:90vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,0.3); animation:modalPop .25s cubic-bezier(.34,1.56,.64,1);">
+        <div style="background:var(--navy); border-radius:12px; padding:24px; max-width:620px; width:90%; max-height:90vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,0.3); animation:modalPop .25s cubic-bezier(.34,1.56,.64,1);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <h2 style="margin:0; font-size:1.5rem;">📥 Import Prizes from Excel</h2>
                 <button onclick="closeImportModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text); padding:0; width:30px; height:30px; display:flex; align-items:center; justify-content:center;">×</button>
             </div>
 
+            {{-- Info box --}}
             <div style="margin-bottom:16px; padding:12px 16px; background:rgba(74,144,226,.08); border:1px solid rgba(74,144,226,.2); border-radius:8px; font-size:.875rem; color:var(--text-dim); line-height:1.6;">
-                Required columns: <strong>name</strong>, <strong>quantity</strong>, <strong>order</strong><br>
-                Optional columns: <strong>description</strong>, <strong>draw_id</strong><br>
-                Row 1 must be the header row. All subsequent rows are imported.
+                Required columns: <strong style="color:var(--text);">name</strong>, <strong style="color:var(--text);">quantity</strong>, <strong style="color:var(--text);">order</strong><br>
+                Optional columns: <strong style="color:var(--text);">description</strong>, <strong style="color:var(--text);">draw_id</strong><br>
+                Row 1 must be the header row. "Assign to Draw" below overrides any draw_id column in the file.
             </div>
 
+            {{-- Draw selector --}}
+            <div style="margin-bottom:16px;">
+                <label for="importDrawId" style="display:block; margin-bottom:8px; font-weight:600;">
+                    Assign to Draw
+                    <span style="font-weight:400; opacity:.6; font-size:.85rem;">(overrides draw_id column for all rows)</span>
+                </label>
+                <select id="importDrawId" style="width:100%; padding:8px 12px; border:1px solid var(--border); border-radius:6px; background:var(--navy2); color:var(--text);">
+                    <option value="">(use draw_id from file, or none)</option>
+                    @foreach ($draws as $drawOption)
+                        <option value="{{ $drawOption->id }}" @if($drawOption->active) selected @endif>
+                            #{{ $drawOption->id }} — {{ $drawOption->name }}
+                            @if ($drawOption->draw_date) ({{ $drawOption->draw_date }}) @endif
+                            @if ($drawOption->active) ⚡ @endif
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- File picker --}}
             <div style="margin-bottom:16px;">
                 <label for="importFile" style="display:block; margin-bottom:8px; font-weight:600;">Upload Excel or CSV file (.xlsx, .xls, .csv)</label>
                 <input id="importFile" type="file" accept=".csv,.xlsx,.xls" style="width:100%;" />
             </div>
 
+            {{-- Preview --}}
             <div id="importPreview" style="display:none; margin-bottom:16px; max-height:300px; overflow:auto;">
                 <div id="importRowCount" style="font-size:.85rem; color:var(--text-dim); margin-bottom:8px;"></div>
-                <table style="width:100%; border-collapse:collapse;">
+                <table style="width:100%; border-collapse:collapse; font-size:.85rem;">
                     <thead>
-                        <tr>
+                        <tr style="background:var(--navy3);">
                             <th style="border:1px solid var(--border); padding:8px; text-align:left;">#</th>
                             <th style="border:1px solid var(--border); padding:8px; text-align:left;">Name</th>
                             <th style="border:1px solid var(--border); padding:8px; text-align:left;">Description</th>
@@ -339,14 +360,15 @@
         }
     </style>
 
-    {{-- SheetJS from CDN --}}
+    {{-- SheetJS from jsdelivr (reliable CDN) --}}
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    {{-- ALL modals above — script runs last, getElementById always finds elements --}}
+    {{-- ALL modals are above — script runs after, so getElementById never returns null --}}
     <script>
         var _deleteUrl  = '';
         var _deleteType = '';
         var _deleteName = '';
+        var _importRows = [];
 
         // ── Delete Modal ─────────────────────────────────────────────────────
         function openDeleteModal(id, name, url, type) {
@@ -426,10 +448,14 @@
             e.preventDefault();
             fetch(this.action, { method: 'POST', body: new FormData(this), headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                 .then(function(res) { return res.json().then(function(d) { if (!res.ok) throw d; return d; }); })
-                .then(function() { closeAddModal(); showSuccessNotification('Prize added successfully!'); setTimeout(function() { location.reload(); }, 1500); })
+                .then(function() {
+                    closeAddModal();
+                    showSuccessNotification('Prize added successfully!');
+                    setTimeout(function() { location.reload(); }, 1500);
+                })
                 .catch(function(err) {
-                    if (err.errors) { showFormErrors('add', err.errors); }
-                    else { alert('Error adding prize: ' + (err.message || 'Unknown error')); }
+                    if (err.errors) showFormErrors('add', err.errors);
+                    else alert('Error adding prize: ' + (err.message || 'Unknown error'));
                 });
         });
 
@@ -468,7 +494,9 @@
                     data.draws.forEach(function(draw) {
                         var opt = document.createElement('option');
                         opt.value = draw.id;
-                        opt.textContent = draw.name + (draw.draw_date ? ' — ' + draw.draw_date : '') + (draw.active ? ' ⚡' : '');
+                        opt.textContent = '#' + draw.id + ' — ' + draw.name
+                            + (draw.draw_date ? ' (' + draw.draw_date + ')' : '')
+                            + (draw.active    ? ' ⚡' : '');
                         drawSelect.appendChild(opt);
                     });
                     drawSelect.value = data.draw_id || '';
@@ -493,12 +521,18 @@
 
         document.getElementById('editPrizeForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            fetch(this.action, { method: 'POST', body: new FormData(this), headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            var fd = new FormData(this);
+            fd.set('_method', 'PUT'); // ensure Laravel routes to updatePrize
+            fetch(this.action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                 .then(function(res) { return res.json().then(function(d) { if (!res.ok) throw d; return d; }); })
-                .then(function() { closeEditModal(); showSuccessNotification('Prize updated successfully!'); setTimeout(function() { location.reload(); }, 1500); })
+                .then(function() {
+                    closeEditModal();
+                    showSuccessNotification('Prize updated successfully!');
+                    setTimeout(function() { location.reload(); }, 1500);
+                })
                 .catch(function(err) {
-                    if (err.errors) { showFormErrors('edit', err.errors); }
-                    else { alert('Error updating prize: ' + (err.message || 'Unknown error')); }
+                    if (err.errors) showFormErrors('edit', err.errors);
+                    else alert('Error updating prize: ' + (err.message || 'Unknown error'));
                 });
         });
 
@@ -552,14 +586,13 @@
         }
 
         // ── Import Modal ─────────────────────────────────────────────────────
-        var _importRows = [];
-
         function openImportModal() {
             document.getElementById('importPrizeModal').style.display = 'flex';
-            document.getElementById('importFile').value = '';
-            document.getElementById('importPreview').style.display = 'none';
-            document.getElementById('importPreviewBody').innerHTML = '';
-            document.getElementById('importSubmitBtn').disabled = true;
+            document.getElementById('importFile').value               = '';
+            document.getElementById('importPreview').style.display    = 'none';
+            document.getElementById('importPreviewBody').innerHTML    = '';
+            document.getElementById('importSubmitBtn').disabled       = true;
+            document.getElementById('importSubmitBtn').textContent    = 'Import';
             _importRows = [];
         }
 
@@ -579,20 +612,14 @@
                         var sheet    = workbook.Sheets[workbook.SheetNames[0]];
                         var json     = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
 
-                        if (json.length <= 1) {
-                            reject('File is empty or has no data rows.');
-                            return;
-                        }
+                        if (json.length <= 1) { reject('File is empty or has no data rows.'); return; }
 
-                        // Normalise headers: lowercase + trim
                         var headers = json[0].map(function(h) {
                             return String(h === null || h === undefined ? '' : h).toLowerCase().trim();
                         });
 
-                        // Map every data row — safely handle missing/undefined cells
                         var rows = json.slice(1)
                             .filter(function(row) {
-                                // Drop fully empty rows
                                 return row.some(function(cell) {
                                     return cell !== undefined && cell !== null && String(cell).trim() !== '';
                                 });
@@ -601,17 +628,12 @@
                                 var obj = {};
                                 headers.forEach(function(header, i) {
                                     var cell = row[i];
-                                    // undefined / null → empty string; numbers → string; strings → trim
                                     obj[header] = (cell === undefined || cell === null) ? '' : String(cell).trim();
                                 });
                                 return obj;
                             });
 
-                        if (rows.length === 0) {
-                            reject('File contains no valid data rows.');
-                            return;
-                        }
-
+                        if (rows.length === 0) { reject('File contains no valid data rows.'); return; }
                         resolve(rows);
                     } catch (err) {
                         reject('Error parsing file: ' + err.message);
@@ -621,6 +643,23 @@
                 reader.readAsArrayBuffer(file);
             });
         }
+
+        function refreshPreviewDrawColumn() {
+            var drawSel = document.getElementById('importDrawId');
+            var rows    = document.getElementById('importPreviewBody').querySelectorAll('tr');
+            rows.forEach(function(tr, idx) {
+                var effectiveDrawId = drawSel.value !== ''
+                    ? drawSel.value
+                    : (_importRows[idx] && _importRows[idx].draw_id ? _importRows[idx].draw_id : '—');
+                var cells = tr.querySelectorAll('td');
+                if (cells[5]) {
+                    cells[5].textContent = effectiveDrawId;
+                    cells[5].style.color = drawSel.value !== '' ? 'var(--accent)' : '';
+                }
+            });
+        }
+
+        document.getElementById('importDrawId').addEventListener('change', refreshPreviewDrawColumn);
 
         document.getElementById('importFile').addEventListener('change', function() {
             var file = this.files[0];
@@ -637,28 +676,31 @@
                 .then(function(rows) {
                     _importRows = rows;
 
-                    var body = document.getElementById('importPreviewBody');
+                    var drawSel = document.getElementById('importDrawId');
+                    var body    = document.getElementById('importPreviewBody');
                     body.innerHTML = '';
+
                     rows.forEach(function(r, idx) {
+                        var effectiveDrawId = drawSel.value !== '' ? drawSel.value : (r.draw_id || '—');
                         var tr = document.createElement('tr');
                         tr.innerHTML =
-                            '<td style="border:1px solid var(--border);padding:8px;">' + (idx + 1) + '</td>' +
+                            '<td style="border:1px solid var(--border);padding:8px;">' + (idx + 1)        + '</td>' +
                             '<td style="border:1px solid var(--border);padding:8px;">' + (r.name        || '') + '</td>' +
                             '<td style="border:1px solid var(--border);padding:8px;">' + (r.description || '') + '</td>' +
                             '<td style="border:1px solid var(--border);padding:8px;">' + (r.quantity    || '') + '</td>' +
                             '<td style="border:1px solid var(--border);padding:8px;">' + (r.order       || '') + '</td>' +
-                            '<td style="border:1px solid var(--border);padding:8px;">' + (r.draw_id     || '') + '</td>';
+                            '<td style="border:1px solid var(--border);padding:8px;color:' + (drawSel.value !== '' ? 'var(--accent)' : 'inherit') + ';">' + effectiveDrawId + '</td>';
                         body.appendChild(tr);
                     });
 
-                    document.getElementById('importRowCount').textContent = rows.length + ' row(s) ready to import.';
-                    document.getElementById('importPreview').style.display = 'block';
-                    document.getElementById('importSubmitBtn').disabled = false;
+                    document.getElementById('importRowCount').textContent      = rows.length + ' row(s) ready to import.';
+                    document.getElementById('importPreview').style.display     = 'block';
+                    document.getElementById('importSubmitBtn').disabled        = false;
                 })
                 .catch(function(err) {
                     alert('Error processing file: ' + err);
                     document.getElementById('importPreview').style.display = 'none';
-                    document.getElementById('importSubmitBtn').disabled = true;
+                    document.getElementById('importSubmitBtn').disabled    = true;
                     _importRows = [];
                 });
         });
@@ -670,37 +712,37 @@
                 ? document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 : document.querySelector('input[name="_token"]').value;
 
-            this.disabled = true;
+            var selectedDrawId = document.getElementById('importDrawId').value;
+
+            // Override draw_id for all rows if a draw is selected
+            var rowsToSend = _importRows.map(function(row) {
+                if (selectedDrawId !== '') {
+                    return Object.assign({}, row, { draw_id: selectedDrawId });
+                }
+                return row;
+            });
+
+            this.disabled    = true;
             this.textContent = 'Importing…';
 
             fetch('/admin/prizes/import', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                body: JSON.stringify({ prizes: _importRows })
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                body: JSON.stringify({ prizes: rowsToSend })
             })
             .then(function(res) { return res.json(); })
             .then(function(data) {
                 if (!data.success) {
                     alert('Import failed: ' + (data.message || 'Unknown error'));
-                    document.getElementById('importSubmitBtn').disabled = false;
+                    document.getElementById('importSubmitBtn').disabled    = false;
                     document.getElementById('importSubmitBtn').textContent = 'Import';
                     return;
                 }
-
-                var msg = data.created + ' prize(s) imported successfully!';
-                if (data.errors && data.errors.length > 0) {
-                    msg += '\n\n' + data.errors.length + ' row(s) skipped:\n';
-                    data.errors.forEach(function(e) {
-                        msg += '  Row ' + e.row + ': ' + e.errors.join(', ') + '\n';
-                    });
-                }
-
                 closeImportModal();
-                showSuccessNotification(data.created + ' prize(s) imported!');
+                showSuccessNotification(data.created + ' prize(s) imported successfully!');
                 if (data.errors && data.errors.length > 0) {
+                    var msg = data.errors.length + ' row(s) skipped:\n';
+                    data.errors.forEach(function(e) { msg += '  Row ' + e.row + ': ' + e.errors.join(', ') + '\n'; });
                     setTimeout(function() { alert(msg); }, 400);
                 }
                 setTimeout(function() { location.reload(); }, 1500);
@@ -708,7 +750,7 @@
             .catch(function(err) {
                 console.error('Import error', err);
                 alert('Import failed. Please try again.');
-                document.getElementById('importSubmitBtn').disabled = false;
+                document.getElementById('importSubmitBtn').disabled    = false;
                 document.getElementById('importSubmitBtn').textContent = 'Import';
             });
         });
