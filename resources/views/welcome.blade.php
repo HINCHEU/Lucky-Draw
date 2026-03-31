@@ -615,7 +615,7 @@
 
         .winner-codes-list {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 10px;
         }
 
@@ -919,19 +919,22 @@
 
             <div class="wcount">🏅 អ្នកឈ្នះ: <strong id="wc">0</strong>&nbsp;/ <span id="totalCount">0</span>
             </div>
-            <div style="text-align: center; margin-top: 20px;">
+            <div style="text-align: center; margin-top: 20px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
                 <button id="drawBtn" class="btn-draw" onclick="addW()">ចាប់រង្វាន់ ✦</button>
+                <div id="nextPrizeWrapper" style="display:none;">
+                    <button id="nextPrizeBtn" class="btn-draw" onclick="goToNextPrize()">រង្វាន់បន្ទាប់</button>
+                </div>
             </div>
-            {{-- draw all cuurrent prizes button (for admin/testing) - can be removed or hidden in production --}}
-            <div style="text-align: center; margin-top: 20px;">
-                <button id="drawBtn" class="btn-draw" onclick="addAllW()">ចាប់រង្វាន់ទាំងអស់ ✦</button>
+            {{-- draw all current prizes button (for admin/testing) - can be removed or hidden in production --}}
+            <div style="text-align: center; margin-top: 12px;">
+                <button id="drawAllBtn" class="btn-draw" onclick="addAllW()">ចាប់រង្វាន់ទាំងអស់ ✦</button>
             </div>
             <!-- reset button intentionally removed -->
 
         </div>
         <div class="winners-section" style="margin: 40px 0; width: 100%; padding: 0 20px; max-width: none;">
             <div class="gc">
-                <div class="stitle">🏆 «ីអ្នកឈ្នះទាំងអស់ / All Winners</div>
+                <div class="stitle">🏆 «អ្នកឈ្នះទាំងអស់ / All Winners</div>
                 <div id="winnersList" class="winners-list">
                     <!-- Winners will be loaded here -->
                 </div>
@@ -963,7 +966,7 @@
     <!-- DRAW MODAL -->
 <div id="drawModal" class="draw-modal" style="display: none;">
     <div class="draw-content">
-        <h2 id="drawModalTitle">ការចាប់រង្វាន់</h2>
+        <h2 id="drawModalTitle">អ្នកឈ្នះបន្ទាប់</h2>
         <div class="draw-code" id="randomCode">0000</div>
         <div id="drawAllCodes" style="display:none; text-align:center; margin-top:20px;">
             <div id="allWinnersList" style="font-family:'Battambang',serif; font-size:1.2rem; color:var(--blue-dark);"></div>
@@ -980,6 +983,7 @@
     <script>
         let currentPrize = null;
         let currentDisplayedPrize = null;
+        let pendingNextPrize = null;
         let remainingCodes = [];
         let drawInterval;
 
@@ -989,29 +993,34 @@
                 .then(data => {
                     const drawBtn = document.getElementById('drawBtn');
                     const nextPrizeWrapper = document.getElementById('nextPrizeWrapper');
+
+                    const renderCompletedPrize = prize => {
+                        document.getElementById('prizeTitle').textContent = prize.name;
+                        document.getElementById('prizeDesc').textContent = '🎁 ' + (prize.description || prize.name);
+                        if (prize.photo_path) {
+                            document.getElementById('prizeImg').src = '/storage/' + prize.photo_path;
+                            document.getElementById('prizeImg').style.display = 'block';
+                        } else {
+                            document.getElementById('prizeImg').style.display = 'none';
+                        }
+                        document.getElementById('remainingCount').textContent = '0';
+                        document.getElementById('totalCount').textContent = prize.total || prize.quantity || '0';
+                        document.getElementById('wc').textContent = document.getElementById('totalCount').textContent;
+                        if (drawBtn) {
+                            drawBtn.disabled = true;
+                            drawBtn.style.opacity = 0.6;
+                        }
+                        if (nextPrizeWrapper) {
+                            nextPrizeWrapper.style.display = 'block';
+                        }
+                    };
+
                     if (data.error) {
                         if (currentDisplayedPrize) {
-                            // Keep current prize displayed and offer Next button to move to next prize manually.
-                            document.getElementById('prizeTitle').textContent = currentDisplayedPrize.name;
-                            document.getElementById('prizeDesc').textContent = '🎁 ' + (currentDisplayedPrize.description || currentDisplayedPrize.name);
-                            if (currentDisplayedPrize.photo_path) {
-                                document.getElementById('prizeImg').src = '/storage/' + currentDisplayedPrize.photo_path;
-                                document.getElementById('prizeImg').style.display = 'block';
-                            } else {
-                                document.getElementById('prizeImg').style.display = 'none';
-                            }
-                            document.getElementById('remainingCount').textContent = '0';
-                            document.getElementById('totalCount').textContent = currentDisplayedPrize.total || currentDisplayedPrize.quantity || '0';
-                            document.getElementById('wc').textContent = document.getElementById('totalCount').textContent;
-                            if (drawBtn) {
-                                drawBtn.disabled = true;
-                                drawBtn.style.opacity = 0.6;
-                            }
-                            nextPrizeWrapper.style.display = 'block';
+                            renderCompletedPrize(currentDisplayedPrize);
                             return;
                         }
 
-                        // No active prize at all
                         document.getElementById('prizeTitle').textContent = 'រង្វាន់អស់ហើយ';
                         document.getElementById('prizeDesc').textContent = data.error || '🎁 No prizes available';
                         document.getElementById('prizeImg').style.display = 'none';
@@ -1019,25 +1028,60 @@
                         document.getElementById('totalCount').textContent = '0';
                         document.getElementById('wc').textContent = '0';
                         currentPrize = null;
+                        currentDisplayedPrize = null;
+                        pendingNextPrize = null;
                         if (drawBtn) {
                             drawBtn.disabled = true;
                             drawBtn.style.opacity = 0.6;
                         }
-                        nextPrizeWrapper.style.display = 'none';
+                        if (nextPrizeWrapper) {
+                            nextPrizeWrapper.style.display = 'none';
+                        }
                         return;
                     }
 
+                    if (currentDisplayedPrize && currentDisplayedPrize.remaining === 0) {
+                        if (data.id !== currentDisplayedPrize.id) {
+                            pendingNextPrize = data;
+                        }
+                        renderCompletedPrize(currentDisplayedPrize);
+                        currentPrize = null;
+                        const drawAllBtn = document.getElementById('drawAllBtn');
+                        if (drawAllBtn) {
+                            drawAllBtn.disabled = true;
+                            drawAllBtn.style.opacity = 0.6;
+                        }
+                        return;
+                    }
+
+                    if (data.remaining === 0) {
+                        currentDisplayedPrize = data;
+                        currentPrize = null;
+                        pendingNextPrize = null;
+                        renderCompletedPrize(data);
+                        const drawAllBtn = document.getElementById('drawAllBtn');
+                        if (drawAllBtn) {
+                            drawAllBtn.disabled = true;
+                            drawAllBtn.style.opacity = 0.6;
+                        }
+                        return;
+                    }
+
+                    pendingNextPrize = null;
                     currentPrize = data;
                     currentDisplayedPrize = data;
                     if (drawBtn) {
                         drawBtn.disabled = false;
                         drawBtn.style.opacity = 1;
                     }
-
+                    const drawAllBtn = document.getElementById('drawAllBtn');
+                    if (drawAllBtn) {
+                        drawAllBtn.disabled = false;
+                        drawAllBtn.style.opacity = 1;
+                    }
                     if (nextPrizeWrapper) {
                         nextPrizeWrapper.style.display = 'none';
                     }
-
                     document.getElementById('prizeTitle').textContent = data.name;
                     document.getElementById('prizeDesc').textContent = '🎁 ' + (data.description || data.name);
                     if (data.photo_path) {
@@ -1054,7 +1098,10 @@
         }
 
         function loadWinners() {
-            fetch('/api/winners')
+            const prizeId = currentDisplayedPrize ? currentDisplayedPrize.id : (currentPrize ? currentPrize.id : null);
+            const url = prizeId ? `/api/winners?prize_id=${encodeURIComponent(prizeId)}` : '/api/winners';
+
+            fetch(url)
                 .then(response => response.json())
                 .then(data => {
                     const list = document.getElementById('winnersList');
@@ -1076,8 +1123,12 @@
                 const codesList = document.getElementById('winnerCodesList');
                 codesList.innerHTML = '';
 
-                // Total slots = current prize quantity (fall back to winners count if no prize loaded)
-                const totalSlots = (currentPrize && currentPrize.total) ? currentPrize.total : data.length;
+                // Total slots = current prize quantity, or current displayed prize quantity when currentPrize is completed.
+                const totalSlots = (currentPrize && currentPrize.total)
+                    ? currentPrize.total
+                    : (currentDisplayedPrize && currentDisplayedPrize.total)
+                        ? currentDisplayedPrize.total
+                        : data.length;
 
                 for (let index = 0; index < totalSlots; index++) {
                     const winner = data[index]; // undefined if no winner yet for this slot
@@ -1089,7 +1140,7 @@
                         // Slot has a winner — show code + delete button
                         item.innerHTML = `
                             <div class="winner-code-number">${index + 1}</div>
-                            <div class="winner-code-text">🏅 ${winner.code}</div>
+                            <div class="winner-code-text"> ${winner.code}</div>
                             <button class="winner-delete-btn" data-id="${winner.id}" title="Delete">✕</button>
                         `;
                         item.querySelector('.winner-delete-btn').addEventListener('click', function(e) {
@@ -1281,6 +1332,12 @@
 
                 codeEl.textContent = data.code;
                 confetti();
+
+                if (currentDisplayedPrize && currentPrize && currentDisplayedPrize.id === currentPrize.id) {
+                    currentDisplayedPrize.remaining = Math.max(0, (currentDisplayedPrize.remaining || 0) - 1);
+                    currentDisplayedPrize.won = (currentDisplayedPrize.won || 0) + 1;
+                }
+
                 setTimeout(() => {
                     modal.style.display = 'none';
                     loadCurrentPrize();
@@ -1422,6 +1479,7 @@
                                         remaining: 0,
                                         won: currentPrize.total || currentPrize.won || 0
                                     });
+                                    currentPrize = null;
                                     document.getElementById('prizeTitle').textContent = currentDisplayedPrize.name;
                                     document.getElementById('prizeDesc').textContent = '🎁 ' + (currentDisplayedPrize.description || currentDisplayedPrize.name);
                                     document.getElementById('remainingCount').textContent = '0';
@@ -1432,6 +1490,11 @@
                                     if (drawBtnEl) {
                                         drawBtnEl.disabled = true;
                                         drawBtnEl.style.opacity = 0.6;
+                                    }
+                                    const drawAllBtnEl = document.getElementById('drawAllBtn');
+                                    if (drawAllBtnEl) {
+                                        drawAllBtnEl.disabled = true;
+                                        drawAllBtnEl.style.opacity = 0.6;
                                     }
 
                                     const nextPrizeWrapperEl = document.getElementById('nextPrizeWrapper');
@@ -1463,11 +1526,38 @@
                 }
 
         function goToNextPrize() {
-            document.getElementById('nextPrizeWrapper').style.display = 'none';
-            document.getElementById('drawBtn').disabled = false;
-            document.getElementById('drawBtn').style.opacity = 1;
+            const nextPrizeWrapperEl = document.getElementById('nextPrizeWrapper');
+            const drawBtn = document.getElementById('drawBtn');
+            if (nextPrizeWrapperEl) {
+                nextPrizeWrapperEl.style.display = 'none';
+            }
+            if (pendingNextPrize) {
+                const data = pendingNextPrize;
+                pendingNextPrize = null;
+                currentPrize = data;
+                currentDisplayedPrize = data;
+                if (drawBtn) {
+                    drawBtn.disabled = false;
+                    drawBtn.style.opacity = 1;
+                }
+                document.getElementById('prizeTitle').textContent = data.name;
+                document.getElementById('prizeDesc').textContent = '🎁 ' + (data.description || data.name);
+                if (data.photo_path) {
+                    document.getElementById('prizeImg').src = '/storage/' + data.photo_path;
+                    document.getElementById('prizeImg').style.display = 'block';
+                } else {
+                    document.getElementById('prizeImg').style.display = 'none';
+                }
+                document.getElementById('remainingCount').textContent = data.remaining;
+                document.getElementById('totalCount').textContent = data.total;
+                document.getElementById('wc').textContent = data.won;
+                location.reload();
+                return;
+            }
             currentPrize = null;
+            currentDisplayedPrize = null;
             loadCurrentPrize();
+            location.reload();
         }
 
         function loadStats() {

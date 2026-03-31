@@ -181,18 +181,25 @@ class LuckyDrawController extends Controller
         return response()->json($results);
     }
 
-    public function getWinners()
+    public function getWinners(Request $request)
     {
         $activeDraw = Draw::where('active', true)->first();
         if (! $activeDraw) {
             return response()->json([]);
         }
 
-        $prize = Prize::where('draw_id', $activeDraw->id)
-            ->where('order', '>', 0)
-            ->orderBy('order')
-            ->whereRaw('(quantity - (SELECT COUNT(*) FROM winners WHERE winners.prize_id = prizes.id)) > 0')
-            ->first();
+        $prizeId = $request->query('prize_id');
+        if ($prizeId) {
+            $prize = Prize::where('draw_id', $activeDraw->id)
+                ->where('id', $prizeId)
+                ->first();
+        } else {
+            $prize = Prize::where('draw_id', $activeDraw->id)
+                ->where('order', '>', 0)
+                ->orderBy('order')
+                ->whereRaw('(quantity - (SELECT COUNT(*) FROM winners WHERE winners.prize_id = prizes.id)) > 0')
+                ->first();
+        }
 
         if (! $prize) {
             return response()->json([]);
