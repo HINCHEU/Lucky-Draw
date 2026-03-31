@@ -693,9 +693,20 @@
         .winner-code-text {
             flex: 1;
             display: flex;
-            align-items: center;
-            gap: 6px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
             font-size: 0.95rem;
+        }
+
+        .winner-code-text .reg-code {
+            font-weight: 700;
+            color: var(--blue-dark);
+        }
+
+        .winner-code-text .winner-name {
+            color: var(--blue-mid);
+            font-size: 0.88rem;
         }
 
         /* STATS PANEL */
@@ -896,12 +907,12 @@
                     <div class="stat-label">Total Prizes</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-number" id="remainingCodes">2000</div>
+                    <div class="stat-number" id="remainingCodes">0</div>
                     <div class="stat-label">Remaining Tickets</div>
                 </div>
             </div>
             <div class="stat-item" style="padding: 10px 12px;margin-top: 10px;">
-                <div class="stat-label" style="margin-bottom: 8px;">Recent Winner Codes</div>
+                <div class="stat-label" style="margin-bottom: 8px;">Recent Winners</div>
                 <div id="winnerCodesList" class="winner-codes-list"></div>
             </div>
         </div>
@@ -1110,9 +1121,9 @@
                     data.forEach(winner => {
                         const card = document.createElement('div');
                         card.className = 'winner-card';
-                        // Show only the winner code (no names/prizes)
                         card.innerHTML = `
                             <div class="winner-code">${winner.code}</div>
+                            <div class="winner-name">${winner.winner_name || 'Unknown'}</div>
                         `;
                         list.appendChild(card);
                     });
@@ -1137,10 +1148,13 @@
                     item.style.position = 'relative';
 
                     if (winner) {
-                        // Slot has a winner — show code + delete button
+                        // Slot has a winner — show registration number and employee name
                         item.innerHTML = `
                             <div class="winner-code-number">${index + 1}</div>
-                            <div class="winner-code-text"> ${winner.code}</div>
+                            <div class="winner-code-text">
+                                <span class="reg-code">${winner.code}</span>
+                                <span class="winner-name">${winner.winner_name || '-'}</span>
+                            </div>
                             <button class="winner-delete-btn" data-id="${winner.id}" title="Delete">✕</button>
                         `;
                         item.querySelector('.winner-delete-btn').addEventListener('click', function(e) {
@@ -1281,15 +1295,12 @@
             modal.style.display = 'flex';
             stopBtn.style.display = 'block';
 
-            const startCode = parseInt(currentPrize.start_code) || 1;
-            const endCode   = parseInt(currentPrize.end_code)   || 2000;
-            const range     = endCode - startCode + 1;
+const spinnerStates = ['⏳', '✨', '🎉'];
 
-            // Start spinning immediately
-            drawInterval = setInterval(() => {
-                const rnd = startCode + Math.floor(Math.random() * range);
-                codeEl.textContent = String(rnd).padStart(4, '0');
-            }, 60);
+                    // Start spinning immediately
+                    drawInterval = setInterval(() => {
+                        codeEl.textContent = spinnerStates[Math.floor(Math.random() * spinnerStates.length)];
+                    }, 120);
 
             // Fire the API request immediately in parallel — don't wait for stop click
             const apiPromise = fetch('/api/draw', {
@@ -1415,20 +1426,17 @@
                     const allWinnersListEl = document.getElementById('allWinnersList');
                     const stopBtn    = document.getElementById('stopDrawBtn');
                     const closeBtn   = document.getElementById('closeDrawAllBtn');
-                    const startCode  = parseInt(currentPrize.start_code) || 1;
-                    const endCode    = parseInt(currentPrize.end_code)   || 2000;
-                    const range      = endCode - startCode + 1;
+const spinnerStates = ['⏳', '✨', '🎉'];
 
-                    // Start spinning
-                    modal.style.display = 'flex';
-                    titleEl.textContent = 'ការចាប់រង្វាន់ទាំងអស់';
-                    stopBtn.style.display = 'block';
-                    allCodesEl.style.display = 'none';
+                            // Start spinning
+                            modal.style.display = 'flex';
+                            titleEl.textContent = 'ការចាប់រង្វាន់ទាំងអស់';
+                            stopBtn.style.display = 'block';
+                            allCodesEl.style.display = 'none';
 
-                    const spinInterval = setInterval(() => {
-                        const rnd = startCode + Math.floor(Math.random() * range);
-                        codeEl.textContent = String(rnd).padStart(4, '0');
-                    }, 60);
+                            const spinInterval = setInterval(() => {
+                                codeEl.textContent = spinnerStates[Math.floor(Math.random() * spinnerStates.length)];
+                            }, 120);
 
                     // Handle stop button click
                     const stopHandler = () => {
@@ -1462,7 +1470,7 @@
                             codeEl.style.display = 'none';
                             titleEl.textContent = 'រង្វាន់ទាំងអស់បានចាប់រួចហើយ';
                             allCodesEl.style.display = 'block';
-                            allWinnersListEl.innerHTML = winners.map(w => `<div class="all-code-item">${String(w.code).padStart(4, '0')}</div>`).join('');
+                            allWinnersListEl.innerHTML = winners.map(w => `<div class="all-code-item">${w.code} – ${w.winner_name || 'Unknown'}</div>`).join('');
                             closeBtn.style.display = 'block';
 
                             confetti();
@@ -1571,7 +1579,7 @@
                     }
                     if (document.getElementById('remainingCodes')) {
                         document.getElementById('remainingCodes').textContent = data
-                            .remainingCodes;
+                            .remainingTickets;
                     }
                 })
                 .catch(error => console.error('Error loading stats:', error));
@@ -1655,7 +1663,7 @@
                         const table = document.createElement('table');
                         table.className = 'prize-winners-table';
                         const thead = document.createElement('thead');
-                        thead.innerHTML = '<tr><th>#</th><th>Code</th><th>Winner Name</th><th>Drawn At</th></tr>';
+                        thead.innerHTML = '<tr><th>#</th><th>Reg. Number</th><th>Winner Name</th><th>Drawn At</th></tr>';
                         table.appendChild(thead);
 
                         const tbody = document.createElement('tbody');
@@ -1667,7 +1675,7 @@
                             prize.winners.forEach((w, idx) => {
                                 const tr = document.createElement('tr');
                                 tr.innerHTML =
-                                    `<td>${idx + 1}</td><td>${String(w.code).padStart(4,'0')}</td><td><span class="winner-name-cell-public" data-winner-id="${w.id}" style="cursor:pointer; color:var(--blue-mid);">${w.winner_name || '-'}</span></td><td>${new Date(w.drawn_at).toLocaleString()}</td>`;
+                                    `<td>${idx + 1}</td><td>${w.code}</td><td><span class="winner-name-cell-public" data-winner-id="${w.id}" style="cursor:pointer; color:var(--blue-mid);">${w.winner_name || '-'}</span></td><td>${new Date(w.drawn_at).toLocaleString()}</td>`;
                                 tbody.appendChild(tr);
                             });
                         }

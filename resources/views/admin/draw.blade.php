@@ -19,15 +19,6 @@
                         <input id="draw_date" name="draw_date" type="date"
                             value="{{ optional($draw->draw_date)->format('Y-m-d') }}">
                     </div>
-                    <div style="flex:1 1 120px; min-width:100px">
-                        <label for="start_code">Start Code</label>
-                        <input id="start_code" name="start_code" type="number" value="{{ $draw->start_code }}"
-                            min="0">
-                    </div>
-                    <div style="flex:1 1 120px; min-width:100px">
-                        <label for="end_code">End Code</label>
-                        <input id="end_code" name="end_code" type="number" value="{{ $draw->end_code }}" min="0">
-                    </div>
                     <div style="flex:0 0 auto; display:flex; align-items:flex-end; padding-bottom:1px">
                         <div class="toggle-wrap">
                             <input type="checkbox" name="active" id="active_chk" value="1"
@@ -89,6 +80,57 @@
                     </div>
                 </div>
             </form>
+        </div>
+
+        {{-- Employees / Tickets --}}
+        <div class="gc">
+            <div class="stitle">👥 Employee Tickets</div>
+            <form action="/admin/draws/{{ $draw->id }}/employees" method="POST" style="display:grid; gap:16px;">
+                @csrf
+                <div class="row">
+                    <div style="flex:1 1 220px; min-width:180px">
+                        <label for="registration_number">Registration Number</label>
+                        <input id="registration_number" name="registration_number" type="text" placeholder="e.g. 12345" required>
+                    </div>
+                    <div style="flex:1 1 220px; min-width:180px">
+                        <label for="employee_name">Employee Name</label>
+                        <input id="employee_name" name="employee_name" type="text" placeholder="e.g. Sok Dara" required>
+                    </div>
+                    <div style="flex:0 0 auto; display:flex; align-items:flex-end">
+                        <button type="submit" class="btn btn-success">Add Employee</button>
+                    </div>
+                </div>
+            </form>
+
+            <div style="margin-top:18px; overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:var(--navy3);">
+                            <th style="padding:10px; text-align:left; border-bottom:1px solid var(--border);">Reg. Number</th>
+                            <th style="padding:10px; text-align:left; border-bottom:1px solid var(--border);">Employee Name</th>
+                            <th style="padding:10px; text-align:center; border-bottom:1px solid var(--border);">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($employees as $employee)
+                            <tr>
+                                <td style="padding:10px; font-family:'DM Mono', monospace;">{{ $employee->registration_number }}</td>
+                                <td style="padding:10px;">{{ $employee->employee_name }}</td>
+                                <td style="padding:10px; text-align:center;">
+                                    <form action="/admin/employees/{{ $employee->id }}" method="POST" onsubmit="return confirm('Remove this employee ticket?');">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="3" style="padding:20px; text-align:center; color:var(--text-dim);">No employees added yet.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         {{-- Prizes in this draw --}}
@@ -186,10 +228,8 @@
                     <span>{{ $draw->draw_date ?? '—' }}</span>
                 </div>
                 <div class="row-item">
-                    <span>Code Range</span>
-                    <span style="font-family:'DM Mono',monospace; font-size:.8rem">
-                        {{ $draw->start_code }}–{{ $draw->end_code }}
-                    </span>
+                    <span>Total Tickets</span>
+                    <span><span class="badge badge-dim">{{ $employees->count() }}</span></span>
                 </div>
                 <div class="row-item">
                     <span>Prizes</span>

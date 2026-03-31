@@ -194,14 +194,6 @@
                         <label for="draw_date">Date</label>
                         <input id="draw_date" name="draw_date" type="date">
                     </div>
-                    <div style="flex:1 1 120px">
-                        <label for="start_code">Start Code</label>
-                        <input id="start_code" name="start_code" type="number" value="1" min="0">
-                    </div>
-                    <div style="flex:1 1 120px">
-                        <label for="end_code">End Code</label>
-                        <input id="end_code" name="end_code" type="number" value="2000" min="0">
-                    </div>
                     <div style="flex:0 0 auto; display:flex; gap:8px; align-items:center">
                         <label style="font-weight:600; margin-right:6px">Active</label>
                         <input type="checkbox" name="active" value="1">

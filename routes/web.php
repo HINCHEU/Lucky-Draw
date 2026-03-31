@@ -19,6 +19,8 @@ Route::put('/admin/draws/{draw}', [LuckyDrawController::class, 'updateDraw']);
 Route::post('/admin/draws', [LuckyDrawController::class, 'storeDraw']);
 Route::post('/admin/draws/{draw}/activate', [LuckyDrawController::class, 'activateDraw']);
 Route::post('/admin/draws/{draw}/prizes', [LuckyDrawController::class, 'storePrizeForDraw']);
+Route::post('/admin/draws/{draw}/employees', [LuckyDrawController::class, 'storeEmployee']);
+Route::delete('/admin/employees/{employee}', [LuckyDrawController::class, 'deleteEmployee']);
 Route::delete('/admin/draws/{draw}', [LuckyDrawController::class, 'deleteDraw']);
 
 Route::get('/admin/prizes', [LuckyDrawController::class, 'prizesIndex']);
@@ -26,6 +28,11 @@ Route::post('/admin/prizes', [LuckyDrawController::class, 'storePrize']);
 Route::get('/admin/prizes/{prize}', [LuckyDrawController::class, 'showPrize']);
 Route::put('/admin/prizes/{prize}', [LuckyDrawController::class, 'updatePrize']);
 Route::delete('/admin/prizes/{prize}', [LuckyDrawController::class, 'deletePrize']);
+
+Route::get('/admin/employees', [LuckyDrawController::class, 'employeesIndex']);
+Route::post('/admin/employees', [LuckyDrawController::class, 'storeEmployeeGeneral']);
+Route::post('/admin/employees/import', [LuckyDrawController::class, 'importEmployees']);
+Route::delete('/admin/employees/{employee}', [LuckyDrawController::class, 'deleteEmployee']);
 
 Route::get('/admin/winners', [LuckyDrawController::class, 'winnersIndex']);
 

@@ -28,7 +28,7 @@
                 <table class="winners-table" style="width:100%; border-collapse:collapse;">
                     <thead>
                         <tr style="background:var(--navy3);">
-                            <th style="padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); font-weight:600;">Winner Code</th>
+                            <th style="padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); font-weight:600;">Reg. Number</th>
                             <th style="padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); font-weight:600;">Prize</th>
                             <th style="padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); font-weight:600;">Draw</th>
                             <th style="padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); font-weight:600;">Drawn At</th>

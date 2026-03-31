@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Draw extends Model
 {
-    protected $fillable = ['name', 'description', 'draw_date', 'active', 'start_code', 'end_code'];
+    protected $fillable = ['name', 'description', 'draw_date', 'active'];
 
     protected $casts = [
         'draw_date' => 'date',
@@ -16,5 +16,10 @@ class Draw extends Model
     public function prizes()
     {
         return $this->hasMany(Prize::class);
+    }
+
+    public function employees()
+    {
+        return $this->hasMany(Employee::class);
     }
 }

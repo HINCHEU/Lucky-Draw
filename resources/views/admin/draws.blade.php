@@ -18,14 +18,6 @@
                         <label for="draw_date">Draw Date</label>
                         <input id="draw_date" name="draw_date" type="date">
                     </div>
-                    <div style="flex:1 1 120px; min-width:100px">
-                        <label for="start_code">Start Code</label>
-                        <input id="start_code" name="start_code" type="number" value="1" min="0">
-                    </div>
-                    <div style="flex:1 1 120px; min-width:100px">
-                        <label for="end_code">End Code</label>
-                        <input id="end_code" name="end_code" type="number" value="2000" min="0">
-                    </div>
                     <div style="flex:0 0 auto; display:flex; align-items:flex-end; padding-bottom:1px">
                         <div class="toggle-wrap">
                             <input type="checkbox" name="active" id="active_check" value="1">
@@ -48,7 +40,7 @@
                         <tr>
                             <th>Name</th>
                             <th>Date</th>
-                            <th>Code Range</th>
+                            <th>Tickets</th>
                             <th>Prizes</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -64,7 +56,7 @@
                                     {{ $d->draw_date ?? '—' }}
                                 </td>
                                 <td style="font-family:'DM Mono', monospace; font-size:.82rem; color:var(--text-dim)">
-                                    {{ $d->start_code }} – {{ $d->end_code }}
+                                    {{ $d->employees_count ?? 0 }} tickets
                                 </td>
                                 <td>
                                     <span class="badge badge-dim">{{ $d->prizes_count }} prizes</span>
@@ -145,9 +137,9 @@
                         <span>Date</span><span>{{ $activeDraw->draw_date ?? '—' }}</span>
                     </div>
                     <div class="row-item">
-                        <span>Codes</span>
+                        <span>Tickets</span>
                         <span style="font-family:'DM Mono',monospace; font-size:.8rem">
-                            {{ $activeDraw->start_code }}–{{ $activeDraw->end_code }}
+                            {{ $activeDraw->employees_count ?? 0 }}
                         </span>
                     </div>
                 </div>
