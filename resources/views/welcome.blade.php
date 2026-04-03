@@ -1052,17 +1052,19 @@
                     }
 
                     if (currentDisplayedPrize && currentDisplayedPrize.remaining === 0) {
-                        if (data.id !== currentDisplayedPrize.id) {
-                            pendingNextPrize = data;
+                        if (data.id !== currentDisplayedPrize.id || data.remaining === 0) {
+                            if (data.id !== currentDisplayedPrize.id) {
+                                pendingNextPrize = data;
+                            }
+                            renderCompletedPrize(currentDisplayedPrize);
+                            currentPrize = null;
+                            const drawAllBtn = document.getElementById('drawAllBtn');
+                            if (drawAllBtn) {
+                                drawAllBtn.disabled = true;
+                                drawAllBtn.style.opacity = 0.6;
+                            }
+                            return;
                         }
-                        renderCompletedPrize(currentDisplayedPrize);
-                        currentPrize = null;
-                        const drawAllBtn = document.getElementById('drawAllBtn');
-                        if (drawAllBtn) {
-                            drawAllBtn.disabled = true;
-                            drawAllBtn.style.opacity = 0.6;
-                        }
-                        return;
                     }
 
                     if (data.remaining === 0) {
@@ -1181,6 +1183,8 @@
                                         });
                                     }
                                     loadCurrentPrize();
+                                    loadWinners();
+                                    loadAllWinners();
                                     loadStats();
                                 }
                             });
@@ -1280,6 +1284,29 @@
             });
         }
 
+        let spinnerCodes = [];
+
+        function getSpinnerLabel() {
+            if (spinnerCodes.length) {
+                return spinnerCodes[Math.floor(Math.random() * spinnerCodes.length)];
+            }
+            const fallback = ['⏳', '✨', '🎉'];
+            return fallback[Math.floor(Math.random() * fallback.length)];
+        }
+
+        function loadSpinnerCodes() {
+            return fetch('/api/remaining-codes')
+                .then(response => response.ok ? response.json() : [])
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        spinnerCodes = data;
+                    }
+                })
+                .catch(() => {
+                    spinnerCodes = [];
+                });
+        }
+
        function addW() {
             const drawBtn = document.getElementById('drawBtn');
             if (drawBtn && drawBtn.disabled) return;
@@ -1294,13 +1321,12 @@
 
             modal.style.display = 'flex';
             stopBtn.style.display = 'block';
+            loadSpinnerCodes();
 
-const spinnerStates = ['⏳', '✨', '🎉'];
-
-                    // Start spinning immediately
-                    drawInterval = setInterval(() => {
-                        codeEl.textContent = spinnerStates[Math.floor(Math.random() * spinnerStates.length)];
-                    }, 120);
+            // Start spinning immediately
+            drawInterval = setInterval(() => {
+                codeEl.textContent = getSpinnerLabel();
+            }, 120);
 
             // Fire the API request immediately in parallel — don't wait for stop click
             const apiPromise = fetch('/api/draw', {
@@ -1355,6 +1381,7 @@ const spinnerStates = ['⏳', '✨', '🎉'];
                     loadWinners();
                     loadAllWinners();
                     loadStats();
+                    loadSpinnerCodes();
                 }, 2000);
             }
 
@@ -1375,33 +1402,6 @@ const spinnerStates = ['⏳', '✨', '🎉'];
 
             stopBtn.addEventListener('click', stopHandler);
         }
-        // function addAllW() {
-        //     if (!confirm('Are you sure you want to draw all remaining prizes? This cannot be undone.')) return;
-        //     fetch('/api/draw-all', {
-        //             method: 'POST',
-        //             headers: {
-        //                 'Content-Type': 'application/json',
-        //                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute(
-        //                     'content') || ''
-        //             },
-        //             body: JSON.stringify({})
-        //         })
-        //         .then(response => response.json())
-        //         .then(data => {
-        //             if (data.error) {
-        //                 alert(data.error);
-        //                 return;
-        //             }
-        //             alert('All remaining prizes have been drawn!');
-        //             loadCurrentPrize();
-        //             loadWinners();
-        //             loadAllWinners();
-        //             loadStats();
-        //         })
-        //         .catch(error => {
-        //             console.error('Error drawing all:', error);
-        //         });
-        // }
        
         function addAllW() {
                     document.getElementById('confirmModal').style.display = 'flex';
@@ -1426,7 +1426,7 @@ const spinnerStates = ['⏳', '✨', '🎉'];
                     const allWinnersListEl = document.getElementById('allWinnersList');
                     const stopBtn    = document.getElementById('stopDrawBtn');
                     const closeBtn   = document.getElementById('closeDrawAllBtn');
-const spinnerStates = ['⏳', '✨', '🎉'];
+                    loadSpinnerCodes();
 
                             // Start spinning
                             modal.style.display = 'flex';
@@ -1435,7 +1435,7 @@ const spinnerStates = ['⏳', '✨', '🎉'];
                             allCodesEl.style.display = 'none';
 
                             const spinInterval = setInterval(() => {
-                                codeEl.textContent = spinnerStates[Math.floor(Math.random() * spinnerStates.length)];
+                                codeEl.textContent = getSpinnerLabel();
                             }, 120);
 
                     // Handle stop button click
@@ -1714,6 +1714,7 @@ const spinnerStates = ['⏳', '✨', '🎉'];
             loadWinners();
             loadAllWinners();
             loadStats();
+            loadSpinnerCodes();
         });
 
         // ── Winner Name Editing on Public Page ──────────────────────────────────

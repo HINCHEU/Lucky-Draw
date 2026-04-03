@@ -289,17 +289,18 @@ class LuckyDrawController extends Controller
             'active'      => 'nullable|boolean',
         ]);
 
-        if ($request->has('active') && $request->boolean('active')) {
+        $isActive = $request->has('active') && $request->boolean('active');
+
+        if ($isActive) {
+            // Deactivate all other draws when setting this one to active
             Draw::where('id', '!=', $draw->id)->update(['active' => false]);
-            $draw->active = true;
-        } else {
-            $draw->active = false;
         }
 
         $draw->update([
             'name'        => $request->name,
             'description' => $request->description,
             'draw_date'   => $request->draw_date ?: null,
+            'active'      => $isActive,
         ]);
 
         return redirect("/admin/draws/{$draw->id}")->with('success', 'Draw updated');
@@ -730,11 +731,18 @@ class LuckyDrawController extends Controller
             'active'      => 'nullable|boolean',
         ]);
 
+        $isActive = $request->has('active') && (bool) $request->active;
+
+        if ($isActive) {
+            // Deactivate all other draws when creating a new active draw
+            Draw::query()->update(['active' => false]);
+        }
+
         Draw::create([
             'name'        => $request->name,
             'description' => $request->description,
             'draw_date'   => $request->draw_date ?: null,
-            'active'      => $request->has('active') ? (bool) $request->active : false,
+            'active'      => $isActive,
         ]);
 
         return redirect('/admin/draws')->with('success', 'Draw created');
@@ -798,6 +806,27 @@ class LuckyDrawController extends Controller
             'remainingTickets' => max($totalTickets - Winner::count(), 0),
             'totalTickets'     => $totalTickets,
         ]);
+    }
+
+    public function getRemainingCodes()
+    {
+        $activeDraw = Draw::where('active', true)->first();
+        if (! $activeDraw) {
+            return response()->json([]);
+        }
+
+        $drawnRegistrationNumbers = Winner::whereHas('prize', function ($q) use ($activeDraw) {
+            $q->where('draw_id', $activeDraw->id);
+        })->pluck('code')->toArray();
+
+        $availableEmployees = Employee::where('draw_id', $activeDraw->id)
+            ->when(!empty($drawnRegistrationNumbers), function ($query) use ($drawnRegistrationNumbers) {
+                return $query->whereNotIn('registration_number', $drawnRegistrationNumbers);
+            })
+            ->orderBy('registration_number')
+            ->pluck('registration_number');
+
+        return response()->json($availableEmployees);
     }
 
     public function showPrize(Prize $prize)

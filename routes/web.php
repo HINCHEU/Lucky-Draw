@@ -10,6 +10,7 @@ Route::post('/api/draw-all', [LuckyDrawController::class, 'drawAll']);
 Route::get('/api/winners', [LuckyDrawController::class, 'getWinners']);
 Route::get('/api/winners-all', [LuckyDrawController::class, 'getAllWinners']);
 Route::get('/api/stats', [LuckyDrawController::class, 'getStats']);
+Route::get('/api/remaining-codes', [LuckyDrawController::class, 'getRemainingCodes']);
 
 Route::get('/admin', [LuckyDrawController::class, 'admin']);
 
