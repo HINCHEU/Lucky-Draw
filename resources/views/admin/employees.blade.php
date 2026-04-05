@@ -115,6 +115,7 @@
                 <table>
                     <thead>
                         <tr>
+                            <th>No</th>
                             <th>Draw</th>
                             <th>Registration Number</th>
                             <th>Employee Name</th>
@@ -125,6 +126,7 @@
                     <tbody>
                         @forelse ($employees as $employee)
                             <tr>
+                                <td style="font-family:'DM Mono', monospace; color:var(--text-dim);">{{ $loop->iteration }}</td>
                                 <td>
                                     <div style="font-weight:600;">{{ $employee->draw->name ?? 'N/A' }}</div>
                                     @if($employee->draw && $employee->draw->draw_date)

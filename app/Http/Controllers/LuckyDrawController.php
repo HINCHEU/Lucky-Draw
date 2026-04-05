@@ -593,9 +593,13 @@ class LuckyDrawController extends Controller
 
     public function employeesIndex()
     {
-        $employees = Employee::with('draw')->orderBy('created_at', 'desc')->get();
-        $draws     = Draw::orderBy('draw_date', 'desc')->get();
-        return view('admin.employees', compact('employees', 'draws'));
+        $activeDraw = Draw::where('active', true)->first();
+        $employees  = $activeDraw
+            ? Employee::with('draw')->where('draw_id', $activeDraw->id)->orderBy('created_at', 'desc')->get()
+            : collect();
+
+        $draws = Draw::orderBy('draw_date', 'desc')->get();
+        return view('admin.employees', compact('employees', 'draws', 'activeDraw'));
     }
 
     public function winnersIndex()
