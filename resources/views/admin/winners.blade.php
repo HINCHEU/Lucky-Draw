@@ -28,6 +28,7 @@
                 <table class="winners-table" style="width:100%; border-collapse:collapse;">
                     <thead>
                         <tr style="background:var(--navy3);">
+                            <th style="padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); font-weight:600;">No</th>
                             <th style="padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); font-weight:600;">Reg. Number</th>
                             <th style="padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); font-weight:600;">Prize</th>
                             <th style="padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); font-weight:600;">Draw</th>
@@ -39,6 +40,8 @@
                     <tbody>
                         @forelse ($winners as $winner)
                             <tr class="winner-row" data-draw-id="{{ $winner->prize->draw_id ?? '' }}" data-winner-id="{{ $winner->id }}" data-prize-id="{{ $winner->prize_id }}" data-winner-code="{{ $winner->code }}" data-winner-drawn-at="{{ $winner->drawn_at }}" data-winner-name="{{ $winner->winner_name ?: '' }}" style="border-bottom:1px solid var(--border);">
+                                <td style="padding:12px 16px; font-family:'DM Mono', monospace; color:var(--text-dim);">
+                                    {{ $loop->iteration }}
                                 <td style="padding:12px 16px;">
                                     <code style="background:var(--navy3); padding:4px 8px; border-radius:4px; font-family:monospace;">{{ $winner->code }}</code>
                                 </td>
