@@ -349,6 +349,23 @@
             box-shadow: 0 6px 22px rgba(13, 43, 107, .5);
         }
 
+        #nextPrizeBtn {
+            background: linear-gradient(135deg, #f4a800, #f9c74f);
+            color: var(--blue-dark);
+            box-shadow: 0 4px 16px rgba(244, 168, 0, .45);
+            animation: nextPrizePulse 1.8s ease-in-out infinite;
+        }
+
+        #nextPrizeBtn:hover {
+            background: linear-gradient(135deg, #e09800, #f4a800);
+            box-shadow: 0 6px 22px rgba(244, 168, 0, .6);
+        }
+
+        @keyframes nextPrizePulse {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50%       { transform: translateY(-3px) scale(1.04); }
+        }
+
         /* PRIZE PANEL */
         .prize-panel {
             text-align: center;
@@ -1184,6 +1201,9 @@
         let pendingNextPrize = null;
         let remainingCodes = [];
         let drawInterval;
+        let showNextPrize = false;
+        let wasAlmostComplete = false;
+        let skipNextPrizeUpdate = false; // Prevent auto-advance to next prize
 
         function loadCurrentPrize() {
             fetch('/api/current-prize')
@@ -1213,11 +1233,19 @@
                         document.getElementById('totalCount').textContent = prize.total || prize.quantity || '0';
                         document.getElementById('wc').textContent = document.getElementById('totalCount').textContent;
                         if (drawBtn) {
+                            drawBtn.textContent = 'ចាប់រង្វាន់ ✦';
+                            drawBtn.onclick = addW;
+                            drawBtn.id = 'drawBtn';
                             drawBtn.disabled = true;
                             drawBtn.style.opacity = 0.6;
                         }
+                        // Hide draw all button for completed prizes
+                        const drawAllBtn = document.getElementById('drawAllBtn');
+                        if (drawAllBtn) {
+                            drawAllBtn.style.display = 'none';
+                        }
                         if (nextPrizeWrapper) {
-                            nextPrizeWrapper.style.display = 'block';
+                            nextPrizeWrapper.style.display = showNextPrize ? 'block' : 'none';
                         }
                     };
 
@@ -1249,14 +1277,16 @@
                     if (currentDisplayedPrize && currentDisplayedPrize.remaining === 0) {
                         if (data.id !== currentDisplayedPrize.id || data.remaining === 0) {
                             if (data.id !== currentDisplayedPrize.id) {
+                                // Next prize is ready — store it but DON'T auto-advance
                                 pendingNextPrize = data;
+                                showNextPrize = true;
                             }
+                            // Stay on completed prize, show "Next Prize" button
                             renderCompletedPrize(currentDisplayedPrize);
                             currentPrize = null;
                             const drawAllBtn = document.getElementById('drawAllBtn');
                             if (drawAllBtn) {
-                                drawAllBtn.disabled = true;
-                                drawAllBtn.style.opacity = 0.6;
+                                drawAllBtn.style.display = 'none';
                             }
                             return;
                         }
@@ -1266,12 +1296,24 @@
                     if (data.remaining === 0) {
                         currentDisplayedPrize = data;
                         currentPrize = null;
-                        pendingNextPrize = null;
+                        // Do NOT set pendingNextPrize here — next loadCurrentPrize poll will detect the next prize
                         renderCompletedPrize(data);
                         const drawAllBtn = document.getElementById('drawAllBtn');
                         if (drawAllBtn) {
-                            drawAllBtn.disabled = true;
-                            drawAllBtn.style.opacity = 0.6;
+                            drawAllBtn.style.display = 'none';
+                        }
+                        return;
+                    }
+
+                    // If a prize was just completed, don't auto-advance to the next prize
+                    // Instead, show the "Next Prize" button
+                    if (skipNextPrizeUpdate) {
+                        // Store the next prize but don't update the current display
+                        pendingNextPrize = data;
+                        showNextPrize = true;
+                        // Re-render the completed prize to show the "Next Prize" button
+                        if (currentDisplayedPrize) {
+                            renderCompletedPrize(currentDisplayedPrize);
                         }
                         return;
                     }
@@ -1279,14 +1321,20 @@
                     pendingNextPrize = null;
                     currentPrize = data;
                     currentDisplayedPrize = data; // always sync with latest API response
+                    skipNextPrizeUpdate = false; // Reset the flag for new prize
                     if (drawBtn) {
                         drawBtn.disabled = false;
                         drawBtn.style.opacity = 1;
                     }
                     const drawAllBtn = document.getElementById('drawAllBtn');
                     if (drawAllBtn) {
-                        drawAllBtn.disabled = false;
-                        drawAllBtn.style.opacity = 1;
+                        if (data.total === 1 || data.quantity === 1) {
+                            drawAllBtn.style.display = 'none';
+                        } else {
+                            drawAllBtn.style.display = 'inline-block';
+                            drawAllBtn.disabled = false;
+                            drawAllBtn.style.opacity = 1;
+                        }
                     }
                     if (nextPrizeWrapper) {
                         nextPrizeWrapper.style.display = 'none';
@@ -1386,6 +1434,9 @@
                                             winner_name: w.winner_name || null
                                         });
                                     }
+                                    // If a winner was deleted, the prize might be incomplete again, so allow advancing
+                                    skipNextPrizeUpdate = false;
+                                    showNextPrize = false;
                                     loadCurrentPrize();
                                     loadWinners();
                                     loadAllWinners();
@@ -1475,6 +1526,9 @@
                         _undoTimer = null;
                         var el = document.getElementById('undoNotification');
                         if (el) el.remove();
+                        // If a winner was restored, the prize might be incomplete again
+                        skipNextPrizeUpdate = false;
+                        showNextPrize = false;
                         loadWinners();
                         loadAllWinners();
                         loadCurrentPrize();
@@ -1518,6 +1572,8 @@
                 alert('No active draw or no prize available. Please ask admin to activate a draw.');
                 return;
             }
+
+            wasAlmostComplete = currentPrize.remaining === 1;
 
             const modal        = document.getElementById('drawModal');
             const drawContent  = document.getElementById('drawContent');
@@ -1592,6 +1648,15 @@
                 stopConfetti();
                 modal.style.display = 'none';
                 winnerNameEl.style.display = 'none';
+                
+                // If this was the last draw (wasAlmostComplete), mark the current prize as completed
+                // and prevent auto-advancement to the next prize
+                if (wasAlmostComplete && currentPrize) {
+                    currentDisplayedPrize = currentPrize; // Store the completed prize
+                    skipNextPrizeUpdate = true; // Prevent auto-advance
+                    showNextPrize = true; // Show the "Next Prize" button
+                }
+                
                 loadCurrentPrize();
                 loadWinners();
                 loadAllWinners();
@@ -1745,6 +1810,12 @@
                     }
 
                     function finalizeDrawAll() {
+                        // Mark prize as completed and prevent auto-advancement
+                        if (currentPrize) {
+                            currentDisplayedPrize = currentPrize;
+                            skipNextPrizeUpdate = true;
+                        }
+                        showNextPrize = true;
                         loadCurrentPrize();
                         loadWinners();
                         loadAllWinners();
@@ -1775,36 +1846,15 @@
 
         function goToNextPrize() {
             const nextPrizeWrapperEl = document.getElementById('nextPrizeWrapper');
-            const drawBtn = document.getElementById('drawBtn');
             if (nextPrizeWrapperEl) {
                 nextPrizeWrapperEl.style.display = 'none';
             }
-            if (pendingNextPrize) {
-                const data = pendingNextPrize;
-                pendingNextPrize = null;
-                currentPrize = data;
-                currentDisplayedPrize = data;
-                if (drawBtn) {
-                    drawBtn.disabled = false;
-                    drawBtn.style.opacity = 1;
-                }
-                document.getElementById('prizeTitle').textContent = data.name;
-                document.getElementById('prizeDesc').textContent = '🎁 ' + (data.description || data.name);
-                if (data.photo_path) {
-                    document.getElementById('prizeImg').src = '/storage/' + data.photo_path;
-                    document.getElementById('prizeImg').style.display = 'block';
-                } else {
-                    document.getElementById('prizeImg').style.display = 'none';
-                }
-                document.getElementById('remainingCount').textContent = data.remaining;
-                document.getElementById('totalCount').textContent = data.total;
-                document.getElementById('wc').textContent = data.won;
-                location.reload();
-                return;
-            }
+            // Reset all state and reload — the API will return the next prize
             currentPrize = null;
             currentDisplayedPrize = null;
-            loadCurrentPrize();
+            pendingNextPrize = null;
+            skipNextPrizeUpdate = false;
+            showNextPrize = false;
             location.reload();
         }
 
