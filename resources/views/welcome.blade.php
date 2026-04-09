@@ -550,7 +550,7 @@
             max-width: 90%;
             margin-left: auto;
             margin-right: auto;
-            font-size: 0.95rem;
+            font-size: 4rem;
             color: var(--blue-mid);
         }
 
