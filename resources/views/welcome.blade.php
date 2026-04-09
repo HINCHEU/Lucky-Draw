@@ -217,7 +217,7 @@
             gap: 28px;
         }
 
-        .right-col .gc:not(.prize-panel) {
+        .right-col .gc {
             padding: 20px 18px;
         }
 
@@ -366,16 +366,23 @@
             50%       { transform: translateY(-3px) scale(1.04); }
         }
 
+        /* Left .gc — when visible, span full grid row */
+        .main-wrap > .gc {
+            grid-column: 1 / -1;
+            width: 100%;
+        }
+
         /* PRIZE PANEL */
         .prize-panel {
             text-align: center;
             position: static;
-            /* remove sticky behavior to avoid sticking on scroll */
+            grid-column: 1 / -1;
+            width: 100%;
         }
 
         .plabel {
             font-family: 'Battambang', serif;
-            font-size: .95rem;
+            font-size: 1rem;
             color: var(--blue-mid);
             margin-bottom: 4px;
         }
@@ -418,8 +425,9 @@
 
         .psub {
             font-family: 'Battambang', serif;
-            font-size: 1rem;
+            font-size: 2rem;
             color: var(--blue-mid);
+            font-weight: 700;
             margin-bottom: 16px;
         }
 
@@ -487,23 +495,63 @@
             }
         }
 
-        .wcount {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: linear-gradient(135deg, var(--blue-dark), var(--blue-mid));
-            color: white;
-            border-radius: 50px;
-            padding: 8px 20px;
-            font-size: .85rem;
-            font-weight: 600;
-            margin-top: 10px;
-            box-shadow: 0 3px 14px rgba(13, 43, 107, .3);
+        .prize-image-card {
+            position: relative;
+            width: 100%;
+            max-width: 280px;
+            margin: 0 auto;
+            padding: 24px;
+            border-radius: 28px;
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid rgba(255, 255, 255, 0.85);
+            box-shadow: 0 18px 45px rgba(13, 43, 107, 0.12);
         }
 
-        .wcount strong {
-            font-size: 1.2rem;
-            color: var(--gold);
+        .prize-image-card .phone-img {
+            width: 100%;
+            max-width: 220px;
+            border-radius: 24px;
+            border: none;
+            box-shadow: none;
+            animation: pFloat 4s ease-in-out infinite;
+        }
+
+        .prize-actions {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .prize-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 16px;
+            margin-bottom: 8px;
+        }
+
+        .prize-title-inline {
+            font-family: 'Battambang', serif;
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: var(--blue-dark);
+            white-space: nowrap;
+            text-align: right;
+        }
+
+        .prize-panel .ptitle {
+            display: none;
+        }
+
+        .prize-panel .psub {
+            margin-bottom: 18px;
+            max-width: 90%;
+            margin-left: auto;
+            margin-right: auto;
+            font-size: 0.95rem;
+            color: var(--blue-mid);
         }
 
         .btn-reset {
@@ -767,6 +815,38 @@
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 10px;
+        }
+
+        .winner-codes-list.single-winner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .winner-codes-list.single-winner .winner-code-item {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            padding: 18px 24px;
+            font-size: 1.05rem;
+        }
+
+        .winner-codes-list.single-winner .winner-code-number {
+            width: 50px;
+            height: 50px;
+            font-size: 1.4rem;
+        }
+
+        .winner-codes-list.single-winner .winner-code-text {
+            font-size: 1.3rem;
+        }
+
+        .winner-codes-list.single-winner .winner-code-text .reg-code {
+            font-size: 1.8rem;
+        }
+
+        .winner-codes-list.single-winner .winner-code-text .winner-name {
+            font-size: clamp(1rem, 2vw, 1.25rem);
         }
 
         .prize-winners-section {
@@ -1081,48 +1161,49 @@
     <div class="main-wrap">
 
         <!-- LEFT: prize header + photo + recent winners -->
-        <div class="gc">
+        <div class="gc" style="display: none;">
             <div class="stitle">🏅 អ្នកឈ្នះរង្វាន់ <span id="leftPrizeTitle" style="color:var(--blue-mid);"></span></div>
             <div style="display:flex; justify-content:center; margin: 12px 0;">
                 <img id="leftPrizeImg" src="" alt="Prize" style="display:none; max-width:260px; border-radius:20px; border:3px solid rgba(255,255,255,.9); box-shadow:0 10px 40px rgba(13,43,107,.22);">
             </div>
             <div class="stat-item" style="padding: 10px 12px;margin-top: 10px;">
-                <div class="stat-label" style="margin-bottom: 8px;">Recent Winners</div>
+                {{-- <div class="stat-label" style="margin-bottom: 8px;">Recent Winners</div> --}}
                 <div id="winnerCodesList" class="winner-codes-list"></div>
+            </div>
+            <div id="leftNextPrizeWrapper" style="text-align: center; margin-top: 20px; display: none;">
+                <button id="leftNextPrizeBtn" class="btn-draw" onclick="goToNextPrize()">រង្វាន់បន្ទាប់</button>
             </div>
         </div>
 
-        <!-- RIGHT COLUMN -->
-        <div class="right-col">
-
-        <!-- Prize Panel -->
+        <!-- Prize Panel — direct child of main-wrap so grid-column: 1/-1 works -->
         <div class="gc prize-panel">
-            <p class="plabel">ការចាប់រង្វាន់</p>
-            <div class="ptitle" id="prizeTitle">Loading...</div>
-            <p class="psub" id="prizeDesc">🎁 Loading...</p>
+            <div class="prize-header">
+                <span class="plabel">ការចាប់រង្វាន់</span>
+                <span class="prize-title-inline" style="display: none" id="prizeTitle">Loading...</span>
+            </div>
+            <p class="psub" id="prizeDesc">by 🎁 Loading...</p>
 
             <div class="phone-wrap">
-                <img id="prizeImg" class="phone-img" src="" alt="Prize" style="display:none;">
-                <div class="pbadge"><strong id="remainingCount">0</strong>រង្វាន់</div>
+                <div class="prize-image-card">
+                    <img id="prizeImg" class="phone-img" src="" alt="Prize" style="display:none;">
+                    <div class="pbadge"><strong id="remainingCount">0</strong>រង្វាន់</div>
+                </div>
             </div>
 
-            <div class="wcount">🏅 អ្នកឈ្នះ: <strong id="wc">0</strong>&nbsp;/ <span id="totalCount">0</span>
-            </div>
-            <div style="text-align: center; margin-top: 20px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
-                <button id="drawBtn" class="btn-draw" onclick="addW()">ចាប់រង្វាន់ ✦</button>
+            <div class="prize-actions">
                 <div id="nextPrizeWrapper" style="display:none;">
                     <button id="nextPrizeBtn" class="btn-draw" onclick="goToNextPrize()">រង្វាន់បន្ទាប់</button>
                 </div>
-            </div>
-            {{-- draw all current prizes button (for admin/testing) - can be removed or hidden in production --}}
-            <div style="text-align: center; margin-top: 12px;">
                 <button id="drawAllBtn" class="btn-draw" onclick="addAllW()">ចាប់រង្វាន់ទាំងអស់ ✦</button>
             </div>
             <!-- reset button intentionally removed -->
 
         </div><!-- /prize-panel -->
 
-        <div class="gc">
+        <!-- RIGHT COLUMN — now only holds the stats card -->
+        <div class="right-col">
+
+        <div class="gc" style="display: none;">
             <div class="stitle" style="font-size: 0.85rem; margin-bottom: 12px;">📊 ស្ថិតិសរុប / Overall Stats</div>
             <div class="stats-panel">
                 <div class="stat-item">
@@ -1187,7 +1268,7 @@
             <div id="drawAllWinnersInner" class="winner-codes-list" style="grid-template-columns: repeat(3, minmax(0,1fr)); gap:20px;"></div>
         </div>
         <div id="drawModalProgress" style="display:none; font-family:'Battambang',serif; font-size:1rem; color:var(--blue-mid); margin-top:8px;"></div>
-        <button id="stopDrawBtn" style="display:none; margin: 20px auto 0; padding: 10px 20px; background: linear-gradient(135deg, var(--blue-dark), var(--blue-mid)); color: white; border: none; border-radius: 50px; font-family: 'Battambang', serif; font-size: 1rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 16px rgba(13,43,107,.35); transition: all .18s;">ឈប់</button>
+        <button id="stopDrawBtn" style="display:none; margin: 20px auto 0; padding: 25px 45px; background: linear-gradient(135deg, var(--blue-dark), var(--blue-mid)); color: white; border: none; border-radius: 50px; font-family: 'Battambang', serif; font-size: 3rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 16px rgba(13,43,107,.35); transition: all .18s;">ចាប់</button>
         <button id="closeDrawAllBtn" style="display:none; margin: 20px auto 0; padding: 10px 20px; background: linear-gradient(135deg, var(--blue-dark), var(--blue-mid)); color: white; border: none; border-radius: 50px; font-family: 'Battambang', serif; font-size: 1rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 16px rgba(13,43,107,.35); transition: all .18s;">បិទ</button>
     </div>
 </div>
@@ -1205,16 +1286,25 @@
         let wasAlmostComplete = false;
         let skipNextPrizeUpdate = false; // Prevent auto-advance to next prize
 
+        // Event listener for stop draw button to toggle card visibility
+        document.getElementById('stopDrawBtn').addEventListener('click', function() {
+            // Hide the prize panel
+            document.querySelector('.prize-panel').style.display = 'none';
+            // Show the left main card
+            document.querySelector('.main-wrap > .gc').style.display = 'block';
+        });
+
         function loadCurrentPrize() {
             fetch('/api/current-prize')
                 .then(response => response.json())
                 .then(data => {
                     const drawBtn = document.getElementById('drawBtn');
                     const nextPrizeWrapper = document.getElementById('nextPrizeWrapper');
+                    const leftNextPrizeWrapper = document.getElementById('leftNextPrizeWrapper');
 
                     const renderCompletedPrize = prize => {
                         document.getElementById('prizeTitle').textContent = prize.name;
-                        document.getElementById('prizeDesc').textContent = '🎁 ' + (prize.description || prize.name);
+                        document.getElementById('prizeDesc').textContent = 'by ' + (prize.description || prize.name);
                         if (prize.photo_path) {
                             document.getElementById('prizeImg').src = '/storage/' + prize.photo_path;
                             document.getElementById('prizeImg').style.display = 'block';
@@ -1230,8 +1320,6 @@
                             else { leftImg.style.display = 'none'; }
                         }
                         document.getElementById('remainingCount').textContent = '0';
-                        document.getElementById('totalCount').textContent = prize.total || prize.quantity || '0';
-                        document.getElementById('wc').textContent = document.getElementById('totalCount').textContent;
                         if (drawBtn) {
                             drawBtn.textContent = 'ចាប់រង្វាន់ ✦';
                             drawBtn.onclick = addW;
@@ -1247,6 +1335,9 @@
                         if (nextPrizeWrapper) {
                             nextPrizeWrapper.style.display = showNextPrize ? 'block' : 'none';
                         }
+                        if (leftNextPrizeWrapper) {
+                            leftNextPrizeWrapper.style.display = showNextPrize ? 'block' : 'none';
+                        }
                     };
 
                     if (data.error) {
@@ -1256,11 +1347,9 @@
                         }
 
                         document.getElementById('prizeTitle').textContent = 'រង្វាន់អស់ហើយ';
-                        document.getElementById('prizeDesc').textContent = data.error || '🎁 No prizes available';
+                        document.getElementById('prizeDesc').textContent = 'by ' + (data.error || 'No prizes available');
                         document.getElementById('prizeImg').style.display = 'none';
                         document.getElementById('remainingCount').textContent = '0';
-                        document.getElementById('totalCount').textContent = '0';
-                        document.getElementById('wc').textContent = '0';
                         currentPrize = null;
                         currentDisplayedPrize = null;
                         pendingNextPrize = null;
@@ -1270,6 +1359,9 @@
                         }
                         if (nextPrizeWrapper) {
                             nextPrizeWrapper.style.display = 'none';
+                        }
+                        if (leftNextPrizeWrapper) {
+                            leftNextPrizeWrapper.style.display = 'none';
                         }
                         return;
                     }
@@ -1328,19 +1420,18 @@
                     }
                     const drawAllBtn = document.getElementById('drawAllBtn');
                     if (drawAllBtn) {
-                        if (data.total === 1 || data.quantity === 1) {
-                            drawAllBtn.style.display = 'none';
-                        } else {
-                            drawAllBtn.style.display = 'inline-block';
-                            drawAllBtn.disabled = false;
-                            drawAllBtn.style.opacity = 1;
-                        }
+                        drawAllBtn.style.display = 'inline-block';
+                        drawAllBtn.disabled = false;
+                        drawAllBtn.style.opacity = 1;
                     }
                     if (nextPrizeWrapper) {
                         nextPrizeWrapper.style.display = 'none';
                     }
+                    if (leftNextPrizeWrapper) {
+                        leftNextPrizeWrapper.style.display = 'none';
+                    }
                     document.getElementById('prizeTitle').textContent = data.name;
-                    document.getElementById('prizeDesc').textContent = '🎁 ' + (data.description || data.name);
+                    document.getElementById('prizeDesc').textContent = (data.name);
                     if (data.photo_path) {
                         document.getElementById('prizeImg').src = '/storage/' + data.photo_path;
                         document.getElementById('prizeImg').style.display = 'block';
@@ -1348,8 +1439,6 @@
                         document.getElementById('prizeImg').style.display = 'none';
                     }
                     document.getElementById('remainingCount').textContent = data.remaining;
-                    document.getElementById('totalCount').textContent = data.total;
-                    document.getElementById('wc').textContent = data.won;
                     // Sync left card
                     const leftTitle = document.getElementById('leftPrizeTitle');
                     const leftImg = document.getElementById('leftPrizeImg');
@@ -1455,6 +1544,14 @@
 
                     codesList.appendChild(item);
                 }
+
+                // Check if only one winner-code-item is displayed and apply centering/font styling
+                if (codesList.children.length === 1) {
+                    codesList.classList.add('single-winner');
+                } else {
+                    codesList.classList.remove('single-winner');
+                }
+
                                     // Refresh global stats (remaining codes should be based on ALL winners)
                                     loadStats();
                                 })
@@ -1566,133 +1663,147 @@
         }
 
        function addW() {
-            const drawBtn = document.getElementById('drawBtn');
-            if (drawBtn && drawBtn.disabled) return;
             if (!currentPrize) {
                 alert('No active draw or no prize available. Please ask admin to activate a draw.');
                 return;
             }
 
-            wasAlmostComplete = currentPrize.remaining === 1;
-
-            const modal        = document.getElementById('drawModal');
-            const drawContent  = document.getElementById('drawContent');
-            const codeEl       = document.getElementById('randomCode');
-            const winnerNameEl = document.getElementById('drawWinnerName');
-            const gridEl       = document.getElementById('drawAllWinnersGrid');
-            const gridInner    = document.getElementById('drawAllWinnersInner');
-            const stopBtn      = document.getElementById('stopDrawBtn');
-            const closeBtn     = document.getElementById('closeDrawAllBtn');
-            const titleEl      = document.getElementById('drawModalTitle');
-
-            // Full reset — clear any leftover state from a previous draw-all
-            winnerNameEl.style.display = 'none';
-            winnerNameEl.textContent   = '';
-            gridEl.style.display       = 'none';
-            gridInner.innerHTML        = '';
-            codeEl.style.display       = 'block';
-            closeBtn.style.display     = 'none';
-            drawContent.classList.remove('wide');
-            titleEl.textContent        = 'អ្នកឈ្នះបន្ទាប់';
-
-            modal.style.display = 'flex';
-            stopBtn.style.display = 'block';
-            loadSpinnerCodes();
-
-            // Start spinning immediately
-            drawInterval = setInterval(() => {
-                codeEl.textContent = getSpinnerLabel();
-            }, 20);
-
-            // Fire the API request immediately in parallel — don't wait for stop click
-            const apiPromise = fetch('/api/draw', {
+            fetch('/api/draw', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                 },
                 body: JSON.stringify({})
-            }).then(r => r.json());
-
-            let apiResult   = null;  // stores result once API returns
-            let userStopped = false; // tracks whether user already clicked stop
-
-            function revealWinner(data) {
-                clearInterval(drawInterval);
-                stopBtn.style.display = 'none';
-
+            })
+            .then(r => r.json())
+            .then(data => {
                 if (data && data.error) {
-                    modal.style.display = 'none';
                     alert(data.error);
-                    finalizeDraw(data);
                     return;
                 }
 
-                // Instantly snap to the real winner code
-                codeEl.textContent = data.code || '???';
-
-                // Show winner name with fade-in
-                if (data.winner_name) {
-                    winnerNameEl.textContent = '🎉 ' + data.winner_name;
-                    winnerNameEl.style.display = 'block';
-                    winnerNameEl.style.animation = 'none';
-                    void winnerNameEl.offsetWidth;
-                    winnerNameEl.style.animation = 'fadeIn .4s ease';
+                if (data && currentPrize && currentPrize.remaining === 1) {
+                    currentDisplayedPrize = currentPrize;
+                    skipNextPrizeUpdate = true;
+                    showNextPrize = true;
                 }
 
-                confetti();
-                setTimeout(() => finalizeDraw(data), 2800);
-            }
-
-            function finalizeDraw(data) {
-                stopConfetti();
-                modal.style.display = 'none';
-                winnerNameEl.style.display = 'none';
-                
-                // If this was the last draw (wasAlmostComplete), mark the current prize as completed
-                // and prevent auto-advancement to the next prize
-                if (wasAlmostComplete && currentPrize) {
-                    currentDisplayedPrize = currentPrize; // Store the completed prize
-                    skipNextPrizeUpdate = true; // Prevent auto-advance
-                    showNextPrize = true; // Show the "Next Prize" button
-                }
-                
                 loadCurrentPrize();
                 loadWinners();
                 loadAllWinners();
                 loadStats();
                 loadSpinnerCodes();
-            }
 
-            apiPromise.then(data => {
-                apiResult = data;
-                if (userStopped) {
-                    revealWinner(data);
-                }
-            }).catch(error => {
+            })
+            .catch(error => {
                 console.error('Error drawing:', error);
-                apiResult = { error: 'Network error. Please try again.' };
-                if (userStopped) {
-                    revealWinner(apiResult);
-                }
+                alert('Network error. Please try again.');
             });
-
-            const stopHandler = () => {
-                stopBtn.removeEventListener('click', stopHandler);
-                userStopped = true;
-
-                if (apiResult !== null) {
-                    // API already done — reveal immediately
-                    revealWinner(apiResult);
-                }
-                // else: keep spinning; apiPromise.then will call revealWinner when ready
-            };
-
-            stopBtn.addEventListener('click', stopHandler);
         }
        
         function addAllW() {
-                    document.getElementById('confirmModal').style.display = 'flex';
+                    if (!currentPrize) {
+                        alert('No active draw or no prize available.');
+                        return;
+                    }
+
+                    const modal        = document.getElementById('drawModal');
+                    const drawContent  = document.getElementById('drawContent');
+                    const codeEl       = document.getElementById('randomCode');
+                    const winnerNameEl = document.getElementById('drawWinnerName');
+                    const titleEl      = document.getElementById('drawModalTitle');
+                    const gridEl       = document.getElementById('drawAllWinnersGrid');
+                    const gridInner    = document.getElementById('drawAllWinnersInner');
+                    const stopBtn      = document.getElementById('stopDrawBtn');
+                    const closeBtn     = document.getElementById('closeDrawAllBtn');
+
+                    // Reset modal state
+                    winnerNameEl.style.display = 'none';
+                    winnerNameEl.textContent = '';
+                    gridEl.style.display = 'none';
+                    gridInner.innerHTML = '';
+                    codeEl.style.display = 'block';
+                    codeEl.textContent = '...';
+                    closeBtn.style.display = 'none';
+                    drawContent.classList.remove('wide');
+                    titleEl.textContent = 'ការចាប់រង្វាន់ទាំងអស់';
+                    modal.style.display = 'flex';
+                    stopBtn.style.display = 'block';
+                    loadSpinnerCodes();
+
+                    const spinInterval = setInterval(() => {
+                        codeEl.textContent = getSpinnerLabel();
+                    }, 20);
+
+                    const apiPromise = fetch('/api/draw-all', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                        },
+                        body: JSON.stringify({})
+                    }).then(r => r.json());
+
+                    let apiResult   = null;
+                    let userStopped = false;
+
+                    function revealAllWinners(winners) {
+                        clearInterval(spinInterval);
+                        stopBtn.style.display = 'none';
+                        confetti();
+
+                        if (!Array.isArray(winners) || winners.length === 0) {
+                            modal.style.display = 'none';
+                            alert(winners?.error || 'No remaining slots to draw.');
+                            finalizeDrawAll();
+                            return;
+                        }
+
+                        const winnerText = winners.length === 1
+                            ? `Winner: ${winners[0].code || '???'}${winners[0].winner_name ? ' - ' + winners[0].winner_name : ''}`
+                            : `Drawn ${winners.length} winners for this prize.`;
+
+                        modal.style.display = 'none';
+                        finalizeDrawAll();
+
+                    }
+
+                    function finalizeDrawAll() {
+                        if (currentPrize) {
+                            currentDisplayedPrize = currentPrize;
+                            skipNextPrizeUpdate = true;
+                        }
+                        showNextPrize = true;
+                        loadCurrentPrize();
+                        loadWinners();
+                        loadAllWinners();
+                        loadStats();
+                        loadSpinnerCodes();
+                    }
+
+                    apiPromise.then(data => {
+                        apiResult = data;
+                        if (userStopped) {
+                            revealAllWinners(data);
+                        }
+                    }).catch(error => {
+                        console.error('Error drawing all:', error);
+                        apiResult = { error: 'Network error. Please try again.' };
+                        if (userStopped) {
+                            revealAllWinners(apiResult);
+                        }
+                    });
+
+                    const stopHandler = () => {
+                        stopBtn.removeEventListener('click', stopHandler);
+                        userStopped = true;
+                        if (apiResult !== null) {
+                            revealAllWinners(apiResult);
+                        }
+                    };
+
+                    stopBtn.addEventListener('click', stopHandler);
                 }
 
                 function closeConfirm() {
@@ -1717,7 +1828,7 @@
                     const stopBtn      = document.getElementById('stopDrawBtn');
                     const closeBtn     = document.getElementById('closeDrawAllBtn');
 
-                    // Reset state
+                    // Reset modal state
                     winnerNameEl.style.display = 'none';
                     winnerNameEl.textContent = '';
                     gridEl.style.display = 'none';
@@ -1726,18 +1837,15 @@
                     codeEl.textContent = '...';
                     closeBtn.style.display = 'none';
                     drawContent.classList.remove('wide');
-
                     titleEl.textContent = 'ការចាប់រង្វាន់ទាំងអស់';
                     modal.style.display = 'flex';
                     stopBtn.style.display = 'block';
                     loadSpinnerCodes();
 
-                    // Start spinning immediately
                     const spinInterval = setInterval(() => {
                         codeEl.textContent = getSpinnerLabel();
-                    }, 20);
+                    }, 10);
 
-                    // Fire API immediately in parallel
                     const apiPromise = fetch('/api/draw-all', {
                         method: 'POST',
                         headers: {
@@ -1753,6 +1861,7 @@
                     function revealAllWinners(winners) {
                         clearInterval(spinInterval);
                         stopBtn.style.display = 'none';
+                        confetti();
 
                         if (!Array.isArray(winners) || winners.length === 0) {
                             modal.style.display = 'none';
@@ -1761,56 +1870,16 @@
                             return;
                         }
 
-                        // Hide spinner, show winners grid
-                        codeEl.style.display = 'none';
-                        gridInner.innerHTML = '';
+                        const winnerText = winners.length === 1
+                            ? `Winner: ${winners[0].code || '???'}${winners[0].winner_name ? ' - ' + winners[0].winner_name : ''}`
+                            : `Drawn ${winners.length} winners for this prize.`;
 
-                        // Apply responsive size class based on winner count
-                        gridInner.classList.remove('size-md', 'size-sm', 'size-xs');
-                        const n = winners.length;
-                        if (n >= 19) gridInner.classList.add('size-xs');
-                        else if (n >= 13) gridInner.classList.add('size-sm');
-                        else if (n >= 7)  gridInner.classList.add('size-md');
-                        // else: default large size
-                        winners.forEach((w, idx) => {
-                            const item = document.createElement('div');
-                            item.className = 'winner-code-item';
-                            item.style.animation = `fadeIn .3s ease ${idx * 0.05}s both`;
-                            item.innerHTML = `
-                                <div class="winner-code-number">${idx + 1}</div>
-                                <div class="winner-code-text">
-                                    <span class="reg-code">${w.code || ''}</span>
-                                    <span class="winner-name">${w.winner_name || ''}</span>
-                                </div>`;
-                            gridInner.appendChild(item);
-                        });
+                        modal.style.display = 'none';
+                        finalizeDrawAll();
 
-                        drawContent.classList.add('wide');
-                        gridEl.style.display = 'block';
-                        closeBtn.style.display = 'block';
-
-                        confetti();
-                        closeBtn.onclick = () => {
-                            stopConfetti();
-                            modal.style.display = 'none';
-                            codeEl.style.display = 'block';
-                            drawContent.classList.remove('wide');
-                            finalizeDrawAll();
-                        };
-                        // Auto-close after 8s
-                        setTimeout(() => {
-                            if (modal.style.display !== 'none') {
-                                stopConfetti();
-                                modal.style.display = 'none';
-                                codeEl.style.display = 'block';
-                                drawContent.classList.remove('wide');
-                                finalizeDrawAll();
-                            }
-                        }, 8000);
                     }
 
                     function finalizeDrawAll() {
-                        // Mark prize as completed and prevent auto-advancement
                         if (currentPrize) {
                             currentDisplayedPrize = currentPrize;
                             skipNextPrizeUpdate = true;
@@ -1825,11 +1894,15 @@
 
                     apiPromise.then(data => {
                         apiResult = data;
-                        if (userStopped) revealAllWinners(data);
+                        if (userStopped) {
+                            revealAllWinners(data);
+                        }
                     }).catch(error => {
                         console.error('Error drawing all:', error);
                         apiResult = { error: 'Network error. Please try again.' };
-                        if (userStopped) revealAllWinners(apiResult);
+                        if (userStopped) {
+                            revealAllWinners(apiResult);
+                        }
                     });
 
                     const stopHandler = () => {
@@ -1838,7 +1911,6 @@
                         if (apiResult !== null) {
                             revealAllWinners(apiResult);
                         }
-                        // else keep spinning; apiPromise.then will call revealAllWinners
                     };
 
                     stopBtn.addEventListener('click', stopHandler);
